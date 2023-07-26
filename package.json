@@ -1,10 +1,10 @@
 {
-  "name": "@rollup/plugin-replace",
-  "version": "5.0.2",
+  "name": "rollup-plugin-replace-regex",
+  "version": "1.0.0",
   "publishConfig": {
     "access": "public"
   },
-  "description": "Replace strings in files while bundling",
+  "description": "Replace regex strings in files while bundling",
   "license": "MIT",
   "repository": {
     "url": "rollup/plugins",
@@ -25,17 +25,8 @@
   },
   "scripts": {
     "build": "rollup -c",
-    "ci:coverage": "nyc pnpm test && nyc report --reporter=text-lcov > coverage.lcov",
-    "ci:lint": "pnpm build && pnpm lint",
-    "ci:lint:commits": "commitlint --from=${CIRCLE_BRANCH} --to=${CIRCLE_SHA1}",
-    "ci:test": "pnpm test -- --verbose && pnpm test:ts",
     "prebuild": "del-cli dist",
-    "prepare": "if [ ! -d 'dist' ]; then pnpm build; fi",
-    "prerelease": "pnpm build",
-    "pretest": "pnpm build",
-    "release": "pnpm --workspace-root plugin:release --pkg $npm_package_name",
-    "test": "ava",
-    "test:ts": "tsc types/index.d.ts test/types.ts --noEmit"
+    "predeploy": "yarn build"
   },
   "files": [
     "dist",
@@ -66,6 +57,7 @@
   },
   "devDependencies": {
     "@rollup/plugin-buble": "^1.0.0",
+    "@rollup/plugin-typescript": "^11.1.2",
     "del-cli": "^5.0.0",
     "locate-character": "^2.0.5",
     "rollup": "^3.2.3",

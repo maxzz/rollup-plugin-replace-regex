@@ -1,3 +1,11 @@
+# rollup-plugin-replace-regex
+
+This is a modified copy of @rollup/plugin-replace with the ability to match regular expression strings.
+
+# @rollup/plugin-replace
+
+🍣 A Rollup plugin which replaces targeted strings in files while bundling.
+
 [npm]: https://img.shields.io/npm/v/@rollup/plugin-replace
 [npm-url]: https://www.npmjs.com/package/@rollup/plugin-replace
 [size]: https://packagephobia.now.sh/badge?p=@rollup/plugin-replace
@@ -6,10 +14,6 @@
 [![npm][npm]][npm-url]
 [![size][size]][size-url]
 [![libera manifesto](https://img.shields.io/badge/libera-manifesto-lightgrey.svg)](https://liberamanifesto.com)
-
-# @rollup/plugin-replace
-
-🍣 A Rollup plugin which replaces targeted strings in files while bundling.
 
 ## Requirements
 

@@ -2,7 +2,7 @@ import { readFileSync } from 'fs';
 
 import buble from '@rollup/plugin-buble';
 
-import { createConfig } from '../../shared/rollup.config.mjs';
+import { createConfig } from './shared/rollup.config.mjs';
 
 export default {
   ...createConfig({
