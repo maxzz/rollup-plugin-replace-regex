@@ -25,15 +25,23 @@ function getReplacements(options) {
     delete values.sourcemap;
     delete values.sourceMap;
     delete values.objectGuards;
+
+    delete values.regexValues;
+    delete values.preventAssignment;
     return values;
 }
 
-function mapToFunctions(object) {
+function getRegexReplacements(options) {
+    return options.regexValues ? Object.assign({}, options.regexValues) : {};
+}
+
+function mapToFunctions(object, initial) {
+    console.log('----mapToFunctions---------', object);
     return Object.keys(object).reduce((fns, key) => {
         const functions = Object.assign({}, fns);
         functions[key] = ensureFunction(object[key]);
         return functions;
-    }, {});
+    }, initial);
 }
 
 const objKeyRegEx =
@@ -71,9 +79,34 @@ export default function replace(options = {}) {
     const filter = createFilter(options.include, options.exclude);
     const { delimiters = ['\\b', '\\b(?!\\.)'], preventAssignment, objectGuards } = options;
     const replacements = getReplacements(options);
-    if (objectGuards) expandTypeofReplacements(replacements);
-    const functionValues = mapToFunctions(replacements);
-    const keys = Object.keys(functionValues).sort(longest).map(escape);
+    const regexReplacements = getRegexReplacements(options);
+    console.log('regexReplacements', regexReplacements);
+
+    if (objectGuards) {
+        expandTypeofReplacements(replacements);
+    }
+    const functionRegexValues = mapToFunctions(regexReplacements, {});
+
+    let functionValues = mapToFunctions(replacements, {});
+
+    const escappedKeys = Object.keys(functionValues).map(escape);
+    const unescappedKeys = Object.keys(functionRegexValues).map(escape);
+
+    functionValues = Object.assign({}, functionValues, functionRegexValues);
+
+    const combinedKeys = {};
+
+    // const regexKeys = Object.keys(functionRegexValues).sort(longest);
+    const regexKeys = Object.keys(functionRegexValues);
+    // const keys = Object.keys(functionValues).sort(longest).map(escape);
+    // const keys = Object.keys(functionValues).sort(longest).map(escape).concat(regexKeys).sort(longest);
+    // const keys = [].concat(escappedKeys, regexKeys).sort(longest);
+    const keys = Object.keys(functionValues).sort(longest);
+
+    //const keys = Object.keys(functionValues).sort(longest).map(escape);
+    console.log('......regexKeys....', regexKeys);
+    console.log('......keys....', keys);
+
     const lookahead = preventAssignment ? '(?!\\s*=[^=])' : '';
     const pattern = new RegExp(
         `${delimiters[0]}(${keys.join('|')})${delimiters[1]}${lookahead}`,
@@ -126,8 +159,17 @@ export default function replace(options = {}) {
 
             const start = match.index;
             const end = start + match[0].length;
+
+            // console.log('codeHasReplacements', `<<${code.substr(start, end)}>>`, 'magicString=', magicString, "!!!");
+            // console.log('codeHasReplacements', `<<${magicString.toString().substr(start, end)}>>`, 'magicString=', magicString, "!!!");
+            console.log('codeHasReplacements', `match[0]=,,${match[0]},, match[1]=,,${match[1]},,`, functionValues);
+
+            continue;
             const replacement = String(functionValues[match[1]](id));
             magicString.overwrite(start, end, replacement);
+
+            console.log('codeHasReplacements', 'replacement=', replacement, "!!!!!", match[1], '...');
+            console.log('codeHasReplacements', 'magicString=', magicString, "!!!!!");
         }
         return result;
     }
