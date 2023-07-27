@@ -175,15 +175,21 @@ export default function replace(options = {}) {
             const functionToRun = entries[idx];
             if (functionToRun) {
                 console.log('functionToRun()', functionToRun[1]());
+
+                const replacement = String(functionToRun[1]());
+                magicString.overwrite(start, end, replacement);
+    
             }
             console.log('functionToRun()', functionToRun);
 
+            /*
             continue;
             const replacement = String(functionValues[match[1]](id));
             magicString.overwrite(start, end, replacement);
 
             console.log('codeHasReplacements', 'replacement=', replacement, "!!!!!", match[1], '...');
             console.log('codeHasReplacements', 'magicString=', magicString, "!!!!!");
+            */
         }
         return result;
     }
