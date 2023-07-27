@@ -167,9 +167,16 @@ export default function replace(options = {}) {
             console.log('codeHasReplacements', `match[0]=,,${match[0]},, match[1]=,,${match[1]},, match[2]=,,${match[2]},, match[3]=,,${match[3]},,`, functionValues);
             //console.log('codeHasReplacements', `match=,,`, match, ',,');
 
-            const [, , ...functionToRun] = match;
-            const idx = functionToRun.findIndex((item) => !!item);
-            console.log('functionToRun', functionToRun, idx);
+            const [, , ...groups] = match;
+            const idx = groups.findIndex((item) => !!item);
+            console.log('functionToRun', groups, idx);
+
+            const entries = Object.entries(functionValues);
+            const functionToRun = entries[idx];
+            if (functionToRun) {
+                console.log('functionToRun()', functionToRun[1]());
+            }
+            console.log('functionToRun()', functionToRun);
 
             continue;
             const replacement = String(functionValues[match[1]](id));
