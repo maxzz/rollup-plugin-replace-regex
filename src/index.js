@@ -101,17 +101,19 @@ export default function replace(options = {}) {
     // const keys = Object.keys(functionValues).sort(longest).map(escape);
     // const keys = Object.keys(functionValues).sort(longest).map(escape).concat(regexKeys).sort(longest);
     // const keys = [].concat(escappedKeys, regexKeys).sort(longest);
-    const keys = Object.keys(functionValues).sort(longest);
+    // const keys = Object.keys(functionValues).sort(longest);
+    const keys = Object.keys(functionValues).map((key) => `(${key})`).sort(longest);
 
     //const keys = Object.keys(functionValues).sort(longest).map(escape);
     console.log('......regexKeys....', regexKeys);
     console.log('......keys....', keys);
 
     const lookahead = preventAssignment ? '(?!\\s*=[^=])' : '';
-    const pattern = new RegExp(
-        `${delimiters[0]}(${keys.join('|')})${delimiters[1]}${lookahead}`,
-        'g'
-    );
+
+    const patternStr = `${delimiters[0]}(${keys.join('|')})${delimiters[1]}${lookahead}`;
+    console.log('patternStr', patternStr);
+
+    const pattern = new RegExp(patternStr, 'g');
 
     return {
         name: 'replace',
@@ -162,7 +164,12 @@ export default function replace(options = {}) {
 
             // console.log('codeHasReplacements', `<<${code.substr(start, end)}>>`, 'magicString=', magicString, "!!!");
             // console.log('codeHasReplacements', `<<${magicString.toString().substr(start, end)}>>`, 'magicString=', magicString, "!!!");
-            console.log('codeHasReplacements', `match[0]=,,${match[0]},, match[1]=,,${match[1]},,`, functionValues);
+            console.log('codeHasReplacements', `match[0]=,,${match[0]},, match[1]=,,${match[1]},, match[2]=,,${match[2]},, match[3]=,,${match[3]},,`, functionValues);
+            //console.log('codeHasReplacements', `match=,,`, match, ',,');
+
+            const [, , ...functionToRun] = match;
+            const idx = functionToRun.findIndex((item) => !!item);
+            console.log('functionToRun', functionToRun, idx);
 
             continue;
             const replacement = String(functionValues[match[1]](id));
