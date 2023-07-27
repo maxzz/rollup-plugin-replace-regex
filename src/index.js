@@ -35,13 +35,13 @@ function getRegexReplacements(options) {
     return options.regexValues ? Object.assign({}, options.regexValues) : {};
 }
 
-function mapToFunctions(object, initial) {
+function mapToFunctions(object) {
     console.log('----mapToFunctions---------', object);
     return Object.keys(object).reduce((fns, key) => {
         const functions = Object.assign({}, fns);
         functions[key] = ensureFunction(object[key]);
         return functions;
-    }, initial);
+    }, {});
 }
 
 const objKeyRegEx =
@@ -85,28 +85,12 @@ export default function replace(options = {}) {
     if (objectGuards) {
         expandTypeofReplacements(replacements);
     }
-    const functionRegexValues = mapToFunctions(regexReplacements, {});
+    const functionRegexValues = mapToFunctions(regexReplacements);
+    const functionNormalValues = mapToFunctions(replacements);
+    const functionValues = Object.assign({}, functionNormalValues, functionRegexValues);
+    const functionValuesEntries = Object.entries(functionValues);
 
-    let functionValues = mapToFunctions(replacements, {});
-
-    const escappedKeys = Object.keys(functionValues).map(escape);
-    const unescappedKeys = Object.keys(functionRegexValues).map(escape);
-
-    functionValues = Object.assign({}, functionValues, functionRegexValues);
-
-    const combinedKeys = {};
-
-    // const regexKeys = Object.keys(functionRegexValues).sort(longest);
-    const regexKeys = Object.keys(functionRegexValues);
-    // const keys = Object.keys(functionValues).sort(longest).map(escape);
-    // const keys = Object.keys(functionValues).sort(longest).map(escape).concat(regexKeys).sort(longest);
-    // const keys = [].concat(escappedKeys, regexKeys).sort(longest);
-    // const keys = Object.keys(functionValues).sort(longest);
     const keys = Object.keys(functionValues).map((key) => `(${key})`).sort(longest);
-
-    //const keys = Object.keys(functionValues).sort(longest).map(escape);
-    console.log('......regexKeys....', regexKeys);
-    console.log('......keys....', keys);
 
     const lookahead = preventAssignment ? '(?!\\s*=[^=])' : '';
 
@@ -162,25 +146,21 @@ export default function replace(options = {}) {
             const start = match.index;
             const end = start + match[0].length;
 
-            // console.log('codeHasReplacements', `<<${code.substr(start, end)}>>`, 'magicString=', magicString, "!!!");
-            // console.log('codeHasReplacements', `<<${magicString.toString().substr(start, end)}>>`, 'magicString=', magicString, "!!!");
-            console.log('codeHasReplacements', `match[0]=,,${match[0]},, match[1]=,,${match[1]},, match[2]=,,${match[2]},, match[3]=,,${match[3]},,`, functionValues);
-            //console.log('codeHasReplacements', `match=,,`, match, ',,');
-
             const [, , ...groups] = match;
             const idx = groups.findIndex((item) => !!item);
+            
             console.log('functionToRun', groups, idx);
 
-            const entries = Object.entries(functionValues);
-            const functionToRun = entries[idx];
+            const functionToRun = functionValuesEntries[idx];
             if (functionToRun) {
-                console.log('functionToRun()', functionToRun[1]());
-
                 const replacement = String(functionToRun[1]());
+
+                console.log(`functionToRun() ${match[0]} --> ${replacement}`);
+
                 magicString.overwrite(start, end, replacement);
-    
+            } else {
+                console.error('functionToRun()', functionToRun);
             }
-            console.log('functionToRun()', functionToRun);
 
             /*
             continue;
