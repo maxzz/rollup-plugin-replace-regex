@@ -47,32 +47,30 @@ function mapToFunctions(object) {
 const objKeyRegEx = /^([_$a-zA-Z\xA0-\uFFFF][_$a-zA-Z0-9\xA0-\uFFFF]*)(\.([_$a-zA-Z\xA0-\uFFFF][_$a-zA-Z0-9\xA0-\uFFFF]*))+$/;
 
 function expandTypeofReplacements(replacements) {
-    Object.keys(replacements).forEach((key) => {
-        const objMatch = key.match(objKeyRegEx);
-        if (!objMatch) return;
-        let dotIndex = objMatch[1].length;
-        let lastIndex = 0;
-        do {
-            // eslint-disable-next-line no-param-reassign
-            replacements[`typeof ${key.slice(lastIndex, dotIndex)} ===`] = '"object" ===';
-            // eslint-disable-next-line no-param-reassign
-            replacements[`typeof ${key.slice(lastIndex, dotIndex)} !==`] = '"object" !==';
-            // eslint-disable-next-line no-param-reassign
-            replacements[`typeof ${key.slice(lastIndex, dotIndex)}===`] = '"object"===';
-            // eslint-disable-next-line no-param-reassign
-            replacements[`typeof ${key.slice(lastIndex, dotIndex)}!==`] = '"object"!==';
-            // eslint-disable-next-line no-param-reassign
-            replacements[`typeof ${key.slice(lastIndex, dotIndex)} ==`] = '"object" ===';
-            // eslint-disable-next-line no-param-reassign
-            replacements[`typeof ${key.slice(lastIndex, dotIndex)} !=`] = '"object" !==';
-            // eslint-disable-next-line no-param-reassign
-            replacements[`typeof ${key.slice(lastIndex, dotIndex)}==`] = '"object"===';
-            // eslint-disable-next-line no-param-reassign
-            replacements[`typeof ${key.slice(lastIndex, dotIndex)}!=`] = '"object"!==';
-            lastIndex = dotIndex + 1;
-            dotIndex = key.indexOf('.', lastIndex);
-        } while (dotIndex !== -1);
-    });
+    Object.keys(replacements).forEach(
+        (key) => {
+            const objMatch = key.match(objKeyRegEx);
+            if (!objMatch) {
+                return;
+            }
+            
+            let dotIndex = objMatch[1].length;
+            let lastIndex = 0;
+            do {
+                replacements[`typeof ${key.slice(lastIndex, dotIndex)} ===`] = '"object" ===';
+                replacements[`typeof ${key.slice(lastIndex, dotIndex)} !==`] = '"object" !==';
+                replacements[`typeof ${key.slice(lastIndex, dotIndex)}===`] = '"object"===';
+                replacements[`typeof ${key.slice(lastIndex, dotIndex)}!==`] = '"object"!==';
+                replacements[`typeof ${key.slice(lastIndex, dotIndex)} ==`] = '"object" ===';
+                replacements[`typeof ${key.slice(lastIndex, dotIndex)} !=`] = '"object" !==';
+                replacements[`typeof ${key.slice(lastIndex, dotIndex)}==`] = '"object"===';
+                replacements[`typeof ${key.slice(lastIndex, dotIndex)}!=`] = '"object"!==';
+
+                lastIndex = dotIndex + 1;
+                dotIndex = key.indexOf('.', lastIndex);
+            } while (dotIndex !== -1);
+        }
+    );
 }
 
 export default function replace(options = {}) {
@@ -90,7 +88,7 @@ export default function replace(options = {}) {
     const regexValues = mapToFunctions(regexReplacements);
     const functionValues = Object.assign({}, normalValues, regexValues);
     const matchEntries = Object.entries(functionValues);
-    const mathcKeys = Object.keys(functionValues).map((key) => `(${key})`).sort(longest);
+    const mathcKeys = Object.keys(functionValues).sort(longest).map((key, idx) => `(?<n${idx}>${key})`);
 
     // console.log({values: Object.keys(functionValues).join(' ▨▨▨ ')});
     console.log(matchEntries.map(([k, v]) => [k, v()]));
@@ -157,6 +155,11 @@ export default function replace(options = {}) {
                 const replacement = String(tuple[1](id, tuple[0], match[0]));
 
                 console.log(idx, match, `◌◌◌ ${match[0]} ⇄ ${replacement}`);
+
+                console.log(idx, `groups ◌◌◌ ${JSON.stringify(Object.entries(match.groups || {}))}`);
+
+                const matchedGroup = Object.entries(match.groups || {}).filter(([[k, v]]) => !!v);
+                console.log(idx, `matchedGroup ◌◌◌ ${matchedGroup}`);
 
                 magicString.overwrite(start, end, replacement);
             } else {
