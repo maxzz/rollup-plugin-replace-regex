@@ -98,14 +98,14 @@ export default function replace(options = {}) {
     const mathcKeys = Object.keys(functionValues).sort(longest).map((key, idx) => `(?<n${idx}>${key})`);
 
     // console.log({values: Object.keys(functionValues).join(' ▨▨▨ ')});
-    console.log(matchEntries.map(([k, v]) => [k, v()]));
-    console.log(matchEntriesNamedTuples);
-    console.log(matchEntriesPatterns);
-    console.log(matchEntriesNamed);
+    console.log('matchEntries', matchEntries.map(([k, v]) => [k, v()]));
+    console.log('matchEntriesNamedTuples', matchEntriesNamedTuples);
+    console.log('matchEntriesPatterns', matchEntriesPatterns);
+    console.log('matchEntriesNamed', matchEntriesNamed);
 
     const lookahead = preventAssignment ? '(?!\\s*=[^=])' : '';
 
-    const patternStr = `${delimiters[0]}(${mathcKeys.join('|')})${delimiters[1]}${lookahead}`;
+    const patternStr = `${delimiters[0]}(${matchEntriesPatterns.join('|')})${delimiters[1]}${lookahead}`;
     console.log('patternStr', patternStr);
 
     /*
@@ -173,27 +173,25 @@ export default function replace(options = {}) {
             const start = match.index;
             const end = start + match[0].length;
 
-            const [, , ...groups] = match;
-            const idx = groups.findIndex((item) => !!item);
+            // const [, , ...groups] = match;
+            // const idx = groups.findIndex((item) => !!item);
 
-            const foundName = Object.entries(match.groups || {}).find(([k, v]) => !!v);
-            const namedTuple = matchEntriesNamed[foundName[0]];
-            console.log('found', foundName, namedTuple);
+            const foundMatch = Object.entries(match.groups || {}).find(([k, v]) => !!v);
+            const namedTuple = matchEntriesNamed[foundMatch[0]];
+            //console.log('found', foundName, namedTuple);
 
-            const tuple = matchEntries[idx];
-            if (tuple) {
-                const replacement = String(tuple[1](id, tuple[0], match[0]));
+            if (namedTuple) {
+                const replacement = String(namedTuple[1](id, namedTuple[0], match[0]));
 
-                // console.log(idx, match, `◌◌◌ ${match[0]} ⇄ ${replacement}`);
+                console.log(`◌◌◌ ${match[0]} ⇄ ${replacement}`, 'found', foundMatch, namedTuple);
+
                 // console.log(idx, `match.groups ◌◌◌ ${JSON.stringify(Object.entries(match.groups || {}))}`);
-
                 // const matchedGroup = Object.entries(match.groups || {}).filter(([[k, v]]) => !!v);
-
                 // console.log(idx, `matchedGroup ◌◌◌ ${matchedGroup.join('◌◌◌◌◌')}`);
 
                 magicString.overwrite(start, end, replacement);
             } else {
-                console.error('functionToRun()', tuple);
+                console.error('functionToRun()', match[0]);
             }
 
             /*
