@@ -53,7 +53,7 @@ function expandTypeofReplacements(replacements) {
             if (!objMatch) {
                 return;
             }
-            
+
             let dotIndex = objMatch[1].length;
             let lastIndex = 0;
             do {
@@ -87,6 +87,31 @@ export default function replace(options = {}) {
     const normalValues = mapToFunctions(replacements);
     const regexValues = mapToFunctions(regexReplacements);
     const functionValues = Object.assign({}, normalValues, regexValues);
+
+    const matchEntries = Object.entries(functionValues).sort((a, b) => b[0].length - a[0].length);;
+    // const matchEntriesNamed = matchEntries.map(([k, v], idx) => ({ [`n${idx}`]: [k, v] }));
+    const matchEntriesNamedTuples = matchEntries.map(([k, v], idx) => [`n${idx}`, k, v]);
+    const matchEntriesPatterns = matchEntriesNamedTuples.map(([group, pattern, func]) => `(?<${group}>${pattern})`);
+    const matchEntriesNamed = Object.fromEntries(matchEntriesNamedTuples.map(([group, pattern, func]) => [group, [pattern, func]]));
+    // const matchEntriesPatterns = matchEntriesNamed.map(([k, [p, v]]) => `(?<${k}>${p})`);
+
+    const mathcKeys = Object.keys(functionValues).sort(longest).map((key, idx) => `(?<n${idx}>${key})`);
+
+    // console.log({values: Object.keys(functionValues).join(' ▨▨▨ ')});
+    console.log(matchEntries.map(([k, v]) => [k, v()]));
+    console.log(matchEntriesNamedTuples);
+    console.log(matchEntriesPatterns);
+    console.log(matchEntriesNamed);
+
+    const lookahead = preventAssignment ? '(?!\\s*=[^=])' : '';
+
+    const patternStr = `${delimiters[0]}(${mathcKeys.join('|')})${delimiters[1]}${lookahead}`;
+    console.log('patternStr', patternStr);
+
+    /*
+    const normalValues = mapToFunctions(replacements);
+    const regexValues = mapToFunctions(regexReplacements);
+    const functionValues = Object.assign({}, normalValues, regexValues);
     const matchEntries = Object.entries(functionValues);
     const mathcKeys = Object.keys(functionValues).sort(longest).map((key, idx) => `(?<n${idx}>${key})`);
 
@@ -97,6 +122,7 @@ export default function replace(options = {}) {
 
     const patternStr = `${delimiters[0]}(${mathcKeys.join('|')})${delimiters[1]}${lookahead}`;
     console.log('patternStr', patternStr);
+    */
 
     const pattern = new RegExp(patternStr, 'g');
 
@@ -150,16 +176,20 @@ export default function replace(options = {}) {
             const [, , ...groups] = match;
             const idx = groups.findIndex((item) => !!item);
 
+            const foundName = Object.entries(match.groups || {}).find(([k, v]) => !!v);
+            const namedTuple = matchEntriesNamed[foundName[0]];
+            console.log('found', foundName, namedTuple);
+
             const tuple = matchEntries[idx];
             if (tuple) {
                 const replacement = String(tuple[1](id, tuple[0], match[0]));
 
-                console.log(idx, match, `◌◌◌ ${match[0]} ⇄ ${replacement}`);
+                // console.log(idx, match, `◌◌◌ ${match[0]} ⇄ ${replacement}`);
+                // console.log(idx, `match.groups ◌◌◌ ${JSON.stringify(Object.entries(match.groups || {}))}`);
 
-                console.log(idx, `groups ◌◌◌ ${JSON.stringify(Object.entries(match.groups || {}))}`);
+                // const matchedGroup = Object.entries(match.groups || {}).filter(([[k, v]]) => !!v);
 
-                const matchedGroup = Object.entries(match.groups || {}).filter(([[k, v]]) => !!v);
-                console.log(idx, `matchedGroup ◌◌◌ ${matchedGroup}`);
+                // console.log(idx, `matchedGroup ◌◌◌ ${matchedGroup.join('◌◌◌◌◌')}`);
 
                 magicString.overwrite(start, end, replacement);
             } else {
