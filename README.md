@@ -6,7 +6,9 @@ Cahnges and addtions
 
 * new key regexValues 
   * key may contain regex expression (except regex group definitions)
+    * regex keys ignore the boundaries option, but boundaries can be added as part of the regex manually
   * value is a function that gets file id and matched regex key
+    * 
 
 # @rollup/plugin-replace
 
