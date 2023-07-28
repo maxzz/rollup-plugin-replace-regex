@@ -2,6 +2,12 @@
 
 This is a modified copy of @rollup/plugin-replace with the ability to match regular expression strings.
 
+Cahnges and addtions
+
+* new key regexValues 
+  * key may contain regex expression (except regex group definitions)
+  * value is a function that gets file id and matched regex key
+
 # @rollup/plugin-replace
 
 🍣 A Rollup plugin which replaces targeted strings in files while bundling.

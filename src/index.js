@@ -36,7 +36,7 @@ function getRegexReplacements(options) {
 }
 
 function mapToFunctions(object) {
-    console.log('----mapToFunctions---------', object);
+    //console.log('----mapToFunctions---------', object);
     return Object.keys(object).reduce((fns, key) => {
         const functions = Object.assign({}, fns);
         functions[key] = ensureFunction(object[key]);
@@ -44,8 +44,8 @@ function mapToFunctions(object) {
     }, {});
 }
 
-const objKeyRegEx =
-    /^([_$a-zA-Z\xA0-\uFFFF][_$a-zA-Z0-9\xA0-\uFFFF]*)(\.([_$a-zA-Z\xA0-\uFFFF][_$a-zA-Z0-9\xA0-\uFFFF]*))+$/;
+const objKeyRegEx = /^([_$a-zA-Z\xA0-\uFFFF][_$a-zA-Z0-9\xA0-\uFFFF]*)(\.([_$a-zA-Z\xA0-\uFFFF][_$a-zA-Z0-9\xA0-\uFFFF]*))+$/;
+
 function expandTypeofReplacements(replacements) {
     Object.keys(replacements).forEach((key) => {
         const objMatch = key.match(objKeyRegEx);
@@ -78,23 +78,26 @@ function expandTypeofReplacements(replacements) {
 export default function replace(options = {}) {
     const filter = createFilter(options.include, options.exclude);
     const { delimiters = ['\\b', '\\b(?!\\.)'], preventAssignment, objectGuards } = options;
+
     const replacements = getReplacements(options);
     const regexReplacements = getRegexReplacements(options);
-    console.log('regexReplacements', regexReplacements);
 
     if (objectGuards) {
         expandTypeofReplacements(replacements);
     }
-    const functionRegexValues = mapToFunctions(regexReplacements);
-    const functionNormalValues = mapToFunctions(replacements);
-    const functionValues = Object.assign({}, functionNormalValues, functionRegexValues);
-    const functionValuesEntries = Object.entries(functionValues);
 
-    const keys = Object.keys(functionValues).map((key) => `(${key})`).sort(longest);
+    const normalValues = mapToFunctions(replacements);
+    const regexValues = mapToFunctions(regexReplacements);
+    const functionValues = Object.assign({}, normalValues, regexValues);
+    const matchEntries = Object.entries(functionValues);
+    const mathcKeys = Object.keys(functionValues).map((key) => `(${key})`).sort(longest);
+
+    // console.log({values: Object.keys(functionValues).join(' ▨▨▨ ')});
+    console.log(matchEntries.map(([k, v]) => [k, v()]));
 
     const lookahead = preventAssignment ? '(?!\\s*=[^=])' : '';
 
-    const patternStr = `${delimiters[0]}(${keys.join('|')})${delimiters[1]}${lookahead}`;
+    const patternStr = `${delimiters[0]}(${mathcKeys.join('|')})${delimiters[1]}${lookahead}`;
     console.log('patternStr', patternStr);
 
     const pattern = new RegExp(patternStr, 'g');
@@ -110,13 +113,13 @@ export default function replace(options = {}) {
 
         renderChunk(code, chunk) {
             const id = chunk.fileName;
-            if (!keys.length) return null;
+            if (!mathcKeys.length) return null;
             if (!filter(id)) return null;
             return executeReplacement(code, id);
         },
 
         transform(code, id) {
-            if (!keys.length) return null;
+            if (!mathcKeys.length) return null;
             if (!filter(id)) return null;
             return executeReplacement(code, id);
         }
@@ -148,18 +151,16 @@ export default function replace(options = {}) {
 
             const [, , ...groups] = match;
             const idx = groups.findIndex((item) => !!item);
-            
-            console.log('functionToRun', groups, idx);
 
-            const functionToRun = functionValuesEntries[idx];
-            if (functionToRun) {
-                const replacement = String(functionToRun[1]());
+            const tuple = matchEntries[idx];
+            if (tuple) {
+                const replacement = String(tuple[1](id, tuple[0], match[0]));
 
-                console.log(`functionToRun() ${match[0]} --> ${replacement}`);
+                console.log(idx, match, `◌◌◌ ${match[0]} ⇄ ${replacement}`);
 
                 magicString.overwrite(start, end, replacement);
             } else {
-                console.error('functionToRun()', functionToRun);
+                console.error('functionToRun()', tuple);
             }
 
             /*
