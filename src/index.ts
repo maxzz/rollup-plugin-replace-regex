@@ -2,7 +2,7 @@ import type { MinimalPluginContext, NullValue, PluginContext, RenderedChunk, Sou
 import { Replacement, RollupReplaceOptions } from '../types';
 import MagicString from 'magic-string';
 import { createFilter } from '@rollup/pluginutils';
-import { defineConditions } from './conditional-comments';
+import { commentFile, defineConditions } from './conditional-comments';
 
 function escape(str: string) {
     return str.replace(/[-[\]/{}()*+?.\\^$|]/g, '\\$&');
@@ -114,7 +114,18 @@ export default function replace(options: RollupReplaceOptions = {}) {
         const namedGropus: NamesGroupsMap = Object.assign({}, groupNrm.groups, groupReg.groups);
 
         const lookahead = preventAssignment ? '(?!\\s*=[^=])' : '';
-        const patternStr = `(${groupReg.patterns.join('|')})|(${delimiters[0]}(${groupNrm.patterns.join('|')})${delimiters[1]}${lookahead})`;
+
+        const needBrackets = !!groupReg.patterns.length && !!groupNrm.patterns.length;
+        const brL = needBrackets ? '(' : '';
+        const brR = needBrackets ? ')' : '';
+
+        const patterns = [];
+        groupReg.patterns.length && patterns.push(`${brL}${groupReg.patterns.join('|')}${brR}`);
+        groupNrm.patterns.length && patterns.push(`${brL}${delimiters[0]}(${groupNrm.patterns.join('|')})${delimiters[1]}${lookahead}${brR}`);
+        const patternStr = patterns.join('|');
+
+        console.log('patternStr', patternStr);
+
         const pattern = new RegExp(patternStr, 'g');
 
         return { hasKeys, namedGropus, pattern, preventAssignment };
@@ -137,16 +148,40 @@ export default function replace(options: RollupReplaceOptions = {}) {
         },
 
         renderChunk(this: PluginContext, code: string, chunk: RenderedChunk): { code: string; map?: SourceMapInput; } | string | NullValue {
+            if (!hasKeys && !comments) {
+                return null;
+            }
+
             const id = chunk.fileName;
-            if (!hasKeys) return null;
-            if (!filter(id)) return null;
-            return executeReplacement(this, code, id);
+            if (!filter(id)) {
+                return null;
+            }
+
+            if (hasKeys) {
+                return executeReplacement(this, code, id);
+            }
+
+            if (comments) {
+                return commentFile(code);
+            }
         },
 
         transform(this: TransformPluginContext, code: string, id: string): TransformResult {
-            if (!hasKeys) return null;
-            if (!filter(id)) return null;
-            return executeReplacement(this, code, id);
+            if (!hasKeys && !comments) {
+                return null;
+            }
+
+            if (!filter(id)) {
+                return null;
+            }
+
+            if (hasKeys) {
+                return executeReplacement(this, code, id);
+            }
+
+            if (comments) {
+                return commentFile(code);
+            }
         }
     };
 
@@ -181,6 +216,7 @@ export default function replace(options: RollupReplaceOptions = {}) {
 
                 verbose && console.log(`    ${groupName}: ◌◌◌◌◌◌◌◌◌ ${match[0]} ⇄ ${replacement}`, namedTuple);
             } else {
+                console.log('match', match);
                 ctx.error(`no mapping for regex key: ${match[0]}`);
             }
         }
