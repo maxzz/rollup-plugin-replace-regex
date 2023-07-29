@@ -54,6 +54,10 @@ export interface RollupReplaceOptions {
    * Addtional definitions for comments check.
    */
   conditions?: string[];
+  /**
+   * Show debug matching and comments process results.
+   */
+  verbose?: string[];
 }
 
 /**

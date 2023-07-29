@@ -11,11 +11,11 @@ function ensureFunction(functionOrValue: Function | string): Function {
     return typeof functionOrValue === 'function' ? functionOrValue : () => functionOrValue;
 }
 
-function getReplacements(options: RollupReplaceOptions): KeyReplacement {
+function getReplacements(options: RollupReplaceOptions): KeyReplacementMap {
     if (options.values) {
         return Object.assign({}, options.values);
     }
-    const values = Object.assign({}, options) as KeyReplacement;
+    const values = Object.assign({}, options) as KeyReplacementMap;
     delete values.delimiters;
     delete values.include;
     delete values.exclude;
@@ -23,32 +23,33 @@ function getReplacements(options: RollupReplaceOptions): KeyReplacement {
     delete values.sourceMap;
     delete values.objectGuards;
 
-    delete values.regexValues;
-    delete values.conditions;
     delete values.preventAssignment;
+    delete values.regexValues;
+    delete values.comments;
+    delete values.conditions;
     return values;
 }
 
-type KeyReplacement = Record<string, Replacement>;
-type KeyFunction = Record<string, Function>;
+type KeyReplacementMap = Record<string, Replacement>;
+type KeyFunctionMap = Record<string, Function>;
 
-function getRegexReplacements(options: RollupReplaceOptions): KeyReplacement {
+function getRegexReplacements(options: RollupReplaceOptions): KeyReplacementMap {
     return options.regexValues ? Object.assign({}, options.regexValues) : {};
 }
 
-function mapToFunctions(object: KeyReplacement): KeyFunction {
+function mapToFunctions(object: KeyReplacementMap): KeyFunctionMap {
     return Object
         .keys(object)
         .reduce((fns, key) => {
             const functions = Object.assign({}, fns);
             functions[key] = ensureFunction(object[key]);
             return functions;
-        }, {} as KeyFunction);
+        }, {} as KeyFunctionMap);
 }
 
 const objKeyRegEx = /^([_$a-zA-Z\xA0-\uFFFF][_$a-zA-Z0-9\xA0-\uFFFF]*)(\.([_$a-zA-Z\xA0-\uFFFF][_$a-zA-Z0-9\xA0-\uFFFF]*))+$/;
 
-function expandTypeofReplacements(replacements: KeyReplacement) {
+function expandTypeofReplacements(replacements: KeyReplacementMap) {
     Object.keys(replacements).forEach(
         (key) => {
             const objMatch = key.match(objKeyRegEx);
@@ -77,35 +78,44 @@ function expandTypeofReplacements(replacements: KeyReplacement) {
 
 export default function replace(options: RollupReplaceOptions = {}) {
     const filter = createFilter(options.include, options.exclude);
-    const { delimiters = ['\\b', '\\b(?!\\.)'], preventAssignment, objectGuards } = options;
 
-    const replacements = getReplacements(options);
-    const regexReplacements = getRegexReplacements(options);
+    const { verbose } = options;
 
-    if (objectGuards) {
-        expandTypeofReplacements(replacements);
+    function initReplace() {
+        const { delimiters = ['\\b', '\\b(?!\\.)'], preventAssignment, objectGuards } = options;
+
+        const replacements = getReplacements(options);
+        const regexReplacements = getRegexReplacements(options);
+
+        if (objectGuards) {
+            expandTypeofReplacements(replacements);
+        }
+
+        function make(values: KeyReplacementMap, groupsName: string, doKeysEscape: boolean) {
+            const tuples: readonly [group: string, pattern: string, func: Function][] = Object
+                .entries(mapToFunctions(values))
+                .sort((a, b) => b[0].length - a[0].length) // longest
+                .map(([k, v], idx) => [`${groupsName}${idx}`, doKeysEscape ? escape(k) : k, v]);
+            return {
+                patterns: tuples.map(([group, pattern, func]) => `(?<${group}>${pattern})`),
+                groups: Object.fromEntries(tuples.map(([group, pattern, func]) => [group, [pattern, func] as const])),
+            };
+        }
+
+        const groupNrm = make(replacements, 'n', true);
+        const groupReg = make(regexReplacements, 'r', false);
+
+        const hasKeys = groupNrm.patterns.length || groupReg.patterns.length;
+        const namedGropus = Object.assign({}, groupNrm.groups, groupReg.groups);
+
+        const lookahead = preventAssignment ? '(?!\\s*=[^=])' : '';
+        const patternStr = `(${groupReg.patterns.join('|')})|(${delimiters[0]}(${groupNrm.patterns.join('|')})${delimiters[1]}${lookahead})`;
+        const pattern = new RegExp(patternStr, 'g');
+
+        return { hasKeys, namedGropus, pattern, preventAssignment };
     }
 
-    function make(values: KeyReplacement, groupsName: string, doKeysEscape: boolean) {
-        const tuples: readonly [group: string, pattern: string, func: Function][] = Object
-            .entries(mapToFunctions(values))
-            .sort((a, b) => b[0].length - a[0].length) // longest
-            .map(([k, v], idx) => [`${groupsName}${idx}`, doKeysEscape ? escape(k) : k, v]);
-        return {
-            patterns: tuples.map(([group, pattern, func]) => `(?<${group}>${pattern})`),
-            groups: Object.fromEntries(tuples.map(([group, pattern, func]) => [group, [pattern, func] as const])),
-        };
-    }
-
-    const groupNrm = make(replacements, 'n', true);
-    const groupReg = make(regexReplacements, 'r', false);
-
-    const hasKeys = groupNrm.patterns.length || groupReg.patterns.length;
-    const namedGropus = Object.assign({}, groupNrm.groups, groupReg.groups);
-
-    const lookahead = preventAssignment ? '(?!\\s*=[^=])' : '';
-    const patternStr = `(${groupReg.patterns.join('|')})|(${delimiters[0]}(${groupNrm.patterns.join('|')})${delimiters[1]}${lookahead})`;
-    const pattern = new RegExp(patternStr, 'g');
+    const { hasKeys, namedGropus, pattern, preventAssignment } = initReplace();
 
     return {
         name: 'replace-regex',
@@ -159,7 +169,7 @@ export default function replace(options: RollupReplaceOptions = {}) {
                 const replacement = String(namedTuple[1](id, match[0], namedTuple[0]));
                 magicString.overwrite(start, end, replacement);
 
-                //console.log(`    ${groupName}: ◌◌◌◌◌◌◌◌◌ ${match[0]} ⇄ ${replacement}`, namedTuple);
+                verbose && console.log(`    ${groupName}: ◌◌◌◌◌◌◌◌◌ ${match[0]} ⇄ ${replacement}`, namedTuple);
             } else {
                 ctx.error(`no mapping for regex key: ${match[0]}`);
             }

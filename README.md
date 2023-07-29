@@ -1,6 +1,6 @@
 # rollup-plugin-replace-regex
 
-This is a modified copy of @rollup/plugin-replace with the ability to match regular expression strings.
+This is a modified copy of @rollup/plugin-replace with the ability to match regular expression strings and process conditional comment blocks.
 
 Cahnges and addtions
 
@@ -12,12 +12,18 @@ Cahnges and addtions
     * matched expression by regex key
     * original matched regex key from regexValues
 * comments
-  * convert /*{}*/ to //
-  * convert /*[condition]{}*/ to //[condition]{}*/
-  * convert /*[condition]{*/  to /*[condition]{} /
-  * convert /*[condition]}*/  to //[condition]{}*/
+ 
+   Special source code comment marks are converted to:
+  | source | result |
+  | ---    |---     |
+  | /*{}*/            | // |
+  | /*[condition]{}*/ | //[condition]{}*/|
+  | /*[condition]{*/  | /*[condition]{} /|
+  | /*[condition]}*/  | //[condition]{}*/|
 * conditions
-  * 
+  * additional conditions for comments
+* verbose
+  * print matching and comments process results.
 
 # @rollup/plugin-replace
 
