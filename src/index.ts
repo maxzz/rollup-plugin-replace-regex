@@ -1,7 +1,7 @@
 import MagicString from 'magic-string';
 import { createFilter } from '@rollup/pluginutils';
 import { Replacement, RollupReplaceOptions } from '../types';
-import { NullValue, PluginContext, RenderedChunk, SourceMap, SourceMapInput, TransformResult } from 'rollup';
+import { MinimalPluginContext, NullValue, PluginContext, RenderedChunk, SourceMap, SourceMapInput, TransformPluginContext, TransformResult } from 'rollup';
 
 function escape(str: string) {
     return str.replace(/[-[\]/{}()*+?.\\^$|]/g, '\\$&');
@@ -108,7 +108,7 @@ export default function replace(options: RollupReplaceOptions = {}) {
     const pattern = new RegExp(patternStr, 'g');
 
     return {
-        name: 'replace',
+        name: 'replace-regex',
 
         buildStart(this: PluginContext) {
             if (![true, false].includes(!!preventAssignment)) {
@@ -116,23 +116,23 @@ export default function replace(options: RollupReplaceOptions = {}) {
             }
         },
 
-        renderChunk(code: string, chunk: RenderedChunk): { code: string; map?: SourceMapInput } | string | NullValue {
+        renderChunk(this: PluginContext, code: string, chunk: RenderedChunk): { code: string; map?: SourceMapInput } | string | NullValue {
             const id = chunk.fileName;
             if (!hasKeys) return null;
             if (!filter(id)) return null;
-            return executeReplacement(code, id);
+            return executeReplacement(this, code, id);
         },
 
-        transform(code: string, id: string): TransformResult {
+        transform(this: TransformPluginContext, code: string, id: string): TransformResult {
             if (!hasKeys) return null;
             if (!filter(id)) return null;
-            return executeReplacement(code, id);
+            return executeReplacement(this, code, id);
         }
     };
 
-    function executeReplacement(code: string, id: string) {
+    function executeReplacement(ctx: MinimalPluginContext, code: string, id: string): { code: string; map?: SourceMap | undefined; } | null {
         const magicString = new MagicString(code);
-        if (!codeHasReplacements(code, id, magicString)) {
+        if (!codeHasReplacements(ctx, code, id, magicString)) {
             return null;
         }
 
@@ -143,7 +143,7 @@ export default function replace(options: RollupReplaceOptions = {}) {
         return result;
     }
 
-    function codeHasReplacements(code: string, id: string, magicString: MagicString) {
+    function codeHasReplacements(ctx: MinimalPluginContext, code: string, id: string, magicString: MagicString): boolean {
         let result = false;
         let match;
 
@@ -160,9 +160,10 @@ export default function replace(options: RollupReplaceOptions = {}) {
                 const replacement = String(namedTuple[1](id, namedTuple[0], match[0]));
                 magicString.overwrite(start, end, replacement);
 
-                console.log(`◌◌◌◌◌◌◌◌◌ ${match[0]} ⇄ ${replacement}`, 'found', foundMatch, namedTuple);
+                console.log(`    ${foundMatch}: ◌◌◌◌◌◌◌◌◌ ${match[0]} ⇄ ${replacement}`, namedTuple);
+                //ctx.info(`    ${foundMatch}: ◌◌◌◌◌◌◌◌◌ ${match[0]} ⇄ ${replacement} ${JSON.stringify(namedTuple)}`)
             } else {
-                console.error('functionToRun()', match[0]);
+                ctx.error(`no mapping for regex key: ${match[0]}`);
             }
         }
         return result;
