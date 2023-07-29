@@ -1,7 +1,7 @@
+import type { MinimalPluginContext, NullValue, PluginContext, RenderedChunk, SourceMap, SourceMapInput, TransformPluginContext, TransformResult } from 'rollup';
+import { Replacement, RollupReplaceOptions } from '../types';
 import MagicString from 'magic-string';
 import { createFilter } from '@rollup/pluginutils';
-import { Replacement, RollupReplaceOptions } from '../types';
-import type { MinimalPluginContext, NullValue, PluginContext, RenderedChunk, SourceMap, SourceMapInput, TransformPluginContext, TransformResult } from 'rollup';
 
 function escape(str: string) {
     return str.replace(/[-[\]/{}()*+?.\\^$|]/g, '\\$&');
@@ -25,6 +25,7 @@ function getReplacements(options: RollupReplaceOptions): KeyReplacement {
     delete values.objectGuards;
 
     delete values.regexValues;
+    delete values.conditions;
     delete values.preventAssignment;
     return values;
 }
@@ -153,20 +154,23 @@ export default function replace(options: RollupReplaceOptions = {}) {
             const start = match.index;
             const end = start + match[0].length;
 
-            const foundMatch = Object.entries(match.groups || {}).find(([k, v]) => !!v)?.[0]!;
-            const namedTuple = namedGropus[foundMatch];
+            const groupName = getMatchedName(match.groups);
+            const namedTuple = namedGropus[groupName!];
 
             if (namedTuple) {
                 const replacement = String(namedTuple[1](id, namedTuple[0], match[0]));
                 magicString.overwrite(start, end, replacement);
 
-                console.log(`    ${foundMatch}: ◌◌◌◌◌◌◌◌◌ ${match[0]} ⇄ ${replacement}`, namedTuple);
-                //ctx.info(`    ${foundMatch}: ◌◌◌◌◌◌◌◌◌ ${match[0]} ⇄ ${replacement} ${JSON.stringify(namedTuple)}`)
+                console.log(`    ${groupName}: ◌◌◌◌◌◌◌◌◌ ${match[0]} ⇄ ${replacement}`, namedTuple);
             } else {
                 ctx.error(`no mapping for regex key: ${match[0]}`);
             }
         }
         return result;
+    }
+
+    function getMatchedName(groups: Record<string, string> | undefined): string | undefined {
+        return groups && Object.entries(groups).find(([k, v]) => !!v)?.[0]!;
     }
 
     function isSourceMapEnabled(): boolean {
