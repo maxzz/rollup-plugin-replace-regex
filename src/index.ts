@@ -12,10 +12,6 @@ function ensureFunction(functionOrValue: Function | string): Function {
     return () => functionOrValue;
 }
 
-function longest(a: any[], b: any[]) {
-    return b.length - a.length;
-}
-
 function getReplacements(options: RollupReplaceOptions): KeyReplacement {
     if (options.values) {
         return Object.assign({}, options.values);
@@ -90,19 +86,19 @@ export default function replace(options: RollupReplaceOptions = {}) {
         expandTypeofReplacements(replacements);
     }
 
-    function make(values: KeyReplacement, groupsName: string) {
+    function make(values: KeyReplacement, groupsName: string, doKeysEscape: boolean) {
         const tuples = Object
             .entries(mapToFunctions(values))
             .sort((a, b) => b[0].length - a[0].length) // longest
-            .map(([k, v], idx) => [`${groupsName}${idx}`, k, v]);
+            .map(([k, v], idx) => [`${groupsName}${idx}`, doKeysEscape ? escape(k) : k, v]);
         return {
             patterns: tuples.map(([group, pattern, func]) => `(?<${group}>${pattern})`),
             groups: Object.fromEntries(tuples.map(([group, pattern, func]) => [group, [pattern, func]])),
         };
     }
 
-    const groupNrm = make(replacements, 'n');
-    const groupReg = make(regexReplacements, 'r');
+    const groupNrm = make(replacements, 'n', true);
+    const groupReg = make(regexReplacements, 'r', false);
 
     const hasKeys = groupNrm.patterns.length || groupReg.patterns.length;
     const namedGropus = Object.assign({}, groupNrm.groups, groupReg.groups);
