@@ -8,8 +8,7 @@ function escape(str: string) {
 }
 
 function ensureFunction(functionOrValue: Function | string): Function {
-    if (typeof functionOrValue === 'function') return functionOrValue;
-    return () => functionOrValue;
+    return typeof functionOrValue === 'function' ? functionOrValue : () => functionOrValue;
 }
 
 function getReplacements(options: RollupReplaceOptions): KeyReplacement {
@@ -88,13 +87,13 @@ export default function replace(options: RollupReplaceOptions = {}) {
     }
 
     function make(values: KeyReplacement, groupsName: string, doKeysEscape: boolean) {
-        const tuples = Object
+        const tuples: readonly [group: string, pattern: string, func: Function][] = Object
             .entries(mapToFunctions(values))
             .sort((a, b) => b[0].length - a[0].length) // longest
             .map(([k, v], idx) => [`${groupsName}${idx}`, doKeysEscape ? escape(k) : k, v]);
         return {
             patterns: tuples.map(([group, pattern, func]) => `(?<${group}>${pattern})`),
-            groups: Object.fromEntries(tuples.map(([group, pattern, func]) => [group, [pattern, func]])),
+            groups: Object.fromEntries(tuples.map(([group, pattern, func]) => [group, [pattern, func] as const])),
         };
     }
 
@@ -117,7 +116,7 @@ export default function replace(options: RollupReplaceOptions = {}) {
             }
         },
 
-        renderChunk(this: PluginContext, code: string, chunk: RenderedChunk): { code: string; map?: SourceMapInput } | string | NullValue {
+        renderChunk(this: PluginContext, code: string, chunk: RenderedChunk): { code: string; map?: SourceMapInput; } | string | NullValue {
             const id = chunk.fileName;
             if (!hasKeys) return null;
             if (!filter(id)) return null;
@@ -137,7 +136,7 @@ export default function replace(options: RollupReplaceOptions = {}) {
             return null;
         }
 
-        const result = { code: magicString.toString() } as { code: string; map?: SourceMap };
+        const result = { code: magicString.toString() } as { code: string; map?: SourceMap; };
         if (isSourceMapEnabled()) {
             result.map = magicString.generateMap({ hires: true });
         }
@@ -156,12 +155,11 @@ export default function replace(options: RollupReplaceOptions = {}) {
 
             const groupName = getMatchedName(match.groups);
             const namedTuple = namedGropus[groupName!];
-
             if (namedTuple) {
-                const replacement = String(namedTuple[1](id, namedTuple[0], match[0]));
+                const replacement = String(namedTuple[1](id, match[0], namedTuple[0]));
                 magicString.overwrite(start, end, replacement);
 
-                console.log(`    ${groupName}: ◌◌◌◌◌◌◌◌◌ ${match[0]} ⇄ ${replacement}`, namedTuple);
+                //console.log(`    ${groupName}: ◌◌◌◌◌◌◌◌◌ ${match[0]} ⇄ ${replacement}`, namedTuple);
             } else {
                 ctx.error(`no mapping for regex key: ${match[0]}`);
             }

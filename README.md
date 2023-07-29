@@ -9,8 +9,15 @@ Cahnges and addtions
     * regex keys ignore the boundaries option, but boundaries can be added as part of the regex manually
   * value is a function that gets
     * file id
-    * original matched regex key from regexValues
     * matched expression by regex key
+    * original matched regex key from regexValues
+* comments
+  * convert /*{}*/ to //
+  * convert /*[condition]{}*/ to //[condition]{}*/
+  * convert /*[condition]{*/  to /*[condition]{} /
+  * convert /*[condition]}*/  to //[condition]{}*/
+* conditions
+  * 
 
 # @rollup/plugin-replace
 

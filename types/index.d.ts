@@ -1,7 +1,7 @@
 import type { FilterPattern } from '@rollup/pluginutils';
 import type { Plugin } from 'rollup';
 
-type Replacement = string | ((id: string, regexValuesKey: string, match: string) => string);
+type Replacement = string | ((id: string, match: string, regexValuesKey: string) => string);
 
 export interface RollupReplaceOptions {
   /**
@@ -47,7 +47,11 @@ export interface RollupReplaceOptions {
    */
   regexValues?: { [str: string]: Replacement };
   /**
-   * regular expression values
+   * To run or not to run comments check.
+   */
+  comments?: boolean;
+  /**
+   * Addtional definitions for comments check.
    */
   conditions?: string[];
 }
