@@ -8,6 +8,6 @@ export default {
   ...createConfig({
     pkg: JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'))
   }),
-  input: 'src/index.js',
-  plugins: [buble()]
+  input: 'src/index.ts',
+//   plugins: [buble()]
 };

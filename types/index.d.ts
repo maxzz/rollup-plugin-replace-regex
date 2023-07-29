@@ -1,7 +1,7 @@
 import type { FilterPattern } from '@rollup/pluginutils';
 import type { Plugin } from 'rollup';
 
-type Replacement = string | ((id: string) => string);
+type Replacement = string | ((id: string, regexValuesKey: string, match: string) => string);
 
 export interface RollupReplaceOptions {
   /**
@@ -42,6 +42,10 @@ export interface RollupReplaceOptions {
    * You can separate values to replace from other options.
    */
   values?: { [str: string]: Replacement };
+  /**
+   * You can separate values to replace from other options.
+   */
+  regexValues?: { [str: string]: Replacement };
 }
 
 /**
