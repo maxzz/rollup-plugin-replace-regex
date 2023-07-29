@@ -98,32 +98,17 @@ export default function replace(options = {}) {
     const groupNrm = make(replacements, 'n');
     const groupReg = make(regexReplacements, 'r');
 
-    // const normalValues = mapToFunctions(replacements);
-    // const regexValues = mapToFunctions(regexReplacements);
-    // const functionValues = Object.assign({}, normalValues, regexValues);
-
-    // const matchEntries = Object.entries(functionValues).sort((a, b) => b[0].length - a[0].length);;
-    // const matchEntriesNamedTuples = matchEntries.map(([k, v], idx) => [`n${idx}`, k, v]);
-    // const matchEntriesPatterns = matchEntriesNamedTuples.map(([group, pattern, func]) => `(?<${group}>${pattern})`);
-    // const matchEntriesNamed = Object.fromEntries(matchEntriesNamedTuples.map(([group, pattern, func]) => [group, [pattern, func]]));
-
     const hasKeys = groupNrm.patterns.length || groupReg.patterns.length;
     const namedGropus = Object.assign({}, groupNrm.groups, groupReg.groups);
 
-    // console.log({values: Object.keys(functionValues).join(' ▨▨▨ ')});
-    // console.log('matchEntries', matchEntries.map(([k, v]) => [k, v()]));
-    // console.log('matchEntriesNamedTuples', matchEntriesNamedTuples);
-    // console.log('matchEntriesPatterns', matchEntriesPatterns);
-    // console.log('matchEntriesNamed', matchEntriesNamed);
-    console.log('groupNrm', groupNrm);
-    console.log('groupReg', groupReg);
-    console.log('namedGropus', namedGropus);
+    // console.log('groupNrm', groupNrm);
+    // console.log('groupReg', groupReg);
+    // console.log('namedGropus', namedGropus);
 
     const lookahead = preventAssignment ? '(?!\\s*=[^=])' : '';
 
     const patternStr = `(${groupReg.patterns.join('|')})|(${delimiters[0]}(${groupNrm.patterns.join('|')})${delimiters[1]}${lookahead})`;
-    // const patternStr = `${delimiters[0]}(${matchEntriesPatterns.join('|')})${delimiters[1]}${lookahead}`;
-    console.log('patternStr', patternStr);
+    // console.log('patternStr', patternStr);
 
     const pattern = new RegExp(patternStr, 'g');
 
@@ -167,42 +152,23 @@ export default function replace(options = {}) {
         let result = false;
         let match;
 
-        // eslint-disable-next-line no-cond-assign
         while ((match = pattern.exec(code))) {
             result = true;
 
             const start = match.index;
             const end = start + match[0].length;
 
-            // const [, , ...groups] = match;
-            // const idx = groups.findIndex((item) => !!item);
-
             const foundMatch = Object.entries(match.groups || {}).find(([k, v]) => !!v);
             const namedTuple = namedGropus[foundMatch[0]];
-            //console.log('found', foundName, namedTuple);
 
             if (namedTuple) {
                 const replacement = String(namedTuple[1](id, namedTuple[0], match[0]));
-
-                console.log(`◌◌◌ ${match[0]} ⇄ ${replacement}`, 'found', foundMatch, namedTuple);
-
-                // console.log(idx, `match.groups ◌◌◌ ${JSON.stringify(Object.entries(match.groups || {}))}`);
-                // const matchedGroup = Object.entries(match.groups || {}).filter(([[k, v]]) => !!v);
-                // console.log(idx, `matchedGroup ◌◌◌ ${matchedGroup.join('◌◌◌◌◌')}`);
-
                 magicString.overwrite(start, end, replacement);
+
+                console.log(`◌◌◌◌◌◌◌◌◌ ${match[0]} ⇄ ${replacement}`, 'found', foundMatch, namedTuple);
             } else {
                 console.error('functionToRun()', match[0]);
             }
-
-            /*
-            continue;
-            const replacement = String(functionValues[match[1]](id));
-            magicString.overwrite(start, end, replacement);
-
-            console.log('codeHasReplacements', 'replacement=', replacement, "!!!!!", match[1], '...');
-            console.log('codeHasReplacements', 'magicString=', magicString, "!!!!!");
-            */
         }
         return result;
     }
