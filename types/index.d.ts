@@ -43,9 +43,13 @@ export interface RollupReplaceOptions {
    */
   values?: { [str: string]: Replacement };
   /**
-   * You can separate values to replace from other options.
+   * regular expression values
    */
   regexValues?: { [str: string]: Replacement };
+  /**
+   * regular expression values
+   */
+  conditions?: string[];
 }
 
 /**
