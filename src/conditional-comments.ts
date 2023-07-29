@@ -11,6 +11,7 @@ function isAllowed(conditionName: string): boolean {
     if (!checkConditions) {
         return false;
     }
+    console.log(`---------conditionName "${conditionName}"`);
     if (!conditionName) {
         return true;
     }

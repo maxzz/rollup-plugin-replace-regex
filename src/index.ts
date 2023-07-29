@@ -124,8 +124,6 @@ export default function replace(options: RollupReplaceOptions = {}) {
         groupNrm.patterns.length && patterns.push(`${brL}${delimiters[0]}(${groupNrm.patterns.join('|')})${delimiters[1]}${lookahead}${brR}`);
         const patternStr = patterns.join('|');
 
-        console.log('patternStr', patternStr);
-
         const pattern = new RegExp(patternStr, 'g');
 
         return { hasKeys, namedGropus, pattern, preventAssignment };
@@ -157,13 +155,17 @@ export default function replace(options: RollupReplaceOptions = {}) {
                 return null;
             }
 
-            if (hasKeys) {
-                return executeReplacement(this, code, id);
-            }
+            let newCode: string | null = null;
 
             if (comments) {
-                return commentFile(code);
+                newCode = commentFile(code);
             }
+
+            if (hasKeys) {
+                return executeReplacement(this, newCode || code, id);
+            }
+
+            return newCode;
         },
 
         transform(this: TransformPluginContext, code: string, id: string): TransformResult {
@@ -175,13 +177,17 @@ export default function replace(options: RollupReplaceOptions = {}) {
                 return null;
             }
 
-            if (hasKeys) {
-                return executeReplacement(this, code, id);
-            }
+            let newCode: string | null = null;
 
             if (comments) {
-                return commentFile(code);
+                newCode = commentFile(code);
             }
+
+            if (hasKeys) {
+                return executeReplacement(this, newCode || code, id);
+            }
+
+            return newCode;
         }
     };
 
