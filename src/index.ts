@@ -1,7 +1,7 @@
 import MagicString from 'magic-string';
 import { createFilter } from '@rollup/pluginutils';
 import { Replacement, RollupReplaceOptions } from '../types';
-import { MinimalPluginContext, NullValue, PluginContext, RenderedChunk, SourceMap, SourceMapInput, TransformPluginContext, TransformResult } from 'rollup';
+import type { MinimalPluginContext, NullValue, PluginContext, RenderedChunk, SourceMap, SourceMapInput, TransformPluginContext, TransformResult } from 'rollup';
 
 function escape(str: string) {
     return str.replace(/[-[\]/{}()*+?.\\^$|]/g, '\\$&');
