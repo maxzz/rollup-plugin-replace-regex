@@ -68,13 +68,13 @@ export function defineConditions(allowedConditions: string[] | undefined) {
     allowedConditions?.forEach((condition) => definedNames.add(condition));
 }
 
-export function commentFile(cnt: string): string {
-    let lines: string[] = cnt.split(/\r??\n/g); // or let lines = content.split(/\r?\n/g); // The best without empty lines: cnt.split(/[\r\n]+/g); // Preserve line numbers: /\r??\n/g
+export function commentFile(cnt: string): string | null {
+    const lines: string[] = cnt.split(/\r??\n/g); // or let lines = content.split(/\r?\n/g); // The best without empty lines: cnt.split(/[\r\n]+/g); // Preserve line numbers: /\r??\n/g
+    const nestingReport: string[] = [];
 
+    let hasChanges = false;
     let beginBlockIdx: number = -1;
     let blockNesting = 0;
-
-    const nestingReport: string[] = [];
 
     lines.forEach((line: string, index: number) => {
         let m = line.match(reComment);
@@ -88,6 +88,7 @@ export function commentFile(cnt: string): string {
                 let all = matchAll(reComment.source, line);
                 let enableBlock = all.every((match: string[]) => isAllowed(match[1]));
                 if (!enableBlock) {
+                    hasChanges = true;
                     lines[index] = lines[index].replace(/^(\s+)(.*)/, (s, p1, p2) => `${p1}// ${p2}`); // block is not allowed. replace with whitespace, '//', and the rest.
                 }
                 return;
@@ -117,6 +118,7 @@ export function commentFile(cnt: string): string {
 
                 if (blockNesting === 0) {
                     if (beginBlockIdx >= 0) { // If we are inside block
+                        hasChanges = true;
                         commentLines(lines, beginBlockIdx, index);
                         beginBlockIdx = -1;
                     }
@@ -130,5 +132,5 @@ export function commentFile(cnt: string): string {
         throw new Error(`TM: mismatched pre-processor comment blocks {!==0}. missing prev closing comment block.`);
     }
 
-    return lines.join('\r\n');
+    return hasChanges ? lines.join('\r\n') : null;
 }
