@@ -64,8 +64,8 @@ export function printReport(report: string[]) {
     report.forEach((line) => console.log(line));
 }
 
-export function defineConditions(allowedConditions: string[]) {
-    allowedConditions.forEach((condition) => definedNames.add(condition));
+export function defineConditions(allowedConditions: string[] | undefined) {
+    allowedConditions?.forEach((condition) => definedNames.add(condition));
 }
 
 export function commentFile(cnt: string): string {

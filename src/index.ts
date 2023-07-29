@@ -2,6 +2,7 @@ import type { MinimalPluginContext, NullValue, PluginContext, RenderedChunk, Sou
 import { Replacement, RollupReplaceOptions } from '../types';
 import MagicString from 'magic-string';
 import { createFilter } from '@rollup/pluginutils';
+import { defineConditions } from './conditional-comments';
 
 function escape(str: string) {
     return str.replace(/[-[\]/{}()*+?.\\^$|]/g, '\\$&');
@@ -32,6 +33,7 @@ function getReplacements(options: RollupReplaceOptions): KeyReplacementMap {
 
 type KeyReplacementMap = Record<string, Replacement>;
 type KeyFunctionMap = Record<string, Function>;
+type NamesGroupsMap = Record<string, readonly [string, Function]>;
 
 function getRegexReplacements(options: RollupReplaceOptions): KeyReplacementMap {
     return options.regexValues ? Object.assign({}, options.regexValues) : {};
@@ -79,13 +81,16 @@ function expandTypeofReplacements(replacements: KeyReplacementMap) {
 export default function replace(options: RollupReplaceOptions = {}) {
     const filter = createFilter(options.include, options.exclude);
 
-    const { verbose } = options;
-
-    function initReplace() {
-        const { delimiters = ['\\b', '\\b(?!\\.)'], preventAssignment, objectGuards } = options;
+    function initReplace(): { hasKeys: boolean; namedGropus: NamesGroupsMap; pattern: RegExp; preventAssignment: boolean | undefined; } {
+        const { preventAssignment, objectGuards, delimiters = ['\\b', '\\b(?!\\.)'] } = options;
 
         const replacements = getReplacements(options);
         const regexReplacements = getRegexReplacements(options);
+
+        const totalKeys = Object.keys(replacements).length + Object.keys(regexReplacements).length;
+        if (!totalKeys) {
+            return { hasKeys: false, namedGropus: {}, pattern: / /, preventAssignment: true };
+        }
 
         if (objectGuards) {
             expandTypeofReplacements(replacements);
@@ -105,8 +110,8 @@ export default function replace(options: RollupReplaceOptions = {}) {
         const groupNrm = make(replacements, 'n', true);
         const groupReg = make(regexReplacements, 'r', false);
 
-        const hasKeys = groupNrm.patterns.length || groupReg.patterns.length;
-        const namedGropus = Object.assign({}, groupNrm.groups, groupReg.groups);
+        const hasKeys = !!groupNrm.patterns.length || !!groupReg.patterns.length;
+        const namedGropus: NamesGroupsMap = Object.assign({}, groupNrm.groups, groupReg.groups);
 
         const lookahead = preventAssignment ? '(?!\\s*=[^=])' : '';
         const patternStr = `(${groupReg.patterns.join('|')})|(${delimiters[0]}(${groupNrm.patterns.join('|')})${delimiters[1]}${lookahead})`;
@@ -117,11 +122,16 @@ export default function replace(options: RollupReplaceOptions = {}) {
 
     const { hasKeys, namedGropus, pattern, preventAssignment } = initReplace();
 
+    const { comments = false, conditions, verbose } = options;
+    if (comments) {
+        defineConditions(conditions);
+    }
+
     return {
         name: 'replace-regex',
 
         buildStart(this: PluginContext) {
-            if (![true, false].includes(!!preventAssignment)) {
+            if (hasKeys && ![true, false].includes(!!preventAssignment)) {
                 this.warn({ message: "@rollup/plugin-replace: 'preventAssignment' currently defaults to false. It is recommended to set this option to `true`, as the next major version will default this option to `true`." });
             }
         },
