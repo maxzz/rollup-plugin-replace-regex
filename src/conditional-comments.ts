@@ -93,58 +93,57 @@ export function commentFile(cnt: string): string | null {
         const [what, condition, comment] = match;
         console.log(chalk.green.dim(`\n${what}`), 'found line match\n');
 
-        if (comment === '<>') {
-            definedNames.add(condition);
-            return;
-        }
-
-        if (comment === '{}') {
-            let all = matchAll(reComment.source, line);
-
-            console.log(chalk.yellow(`--> all="${all}"`), all);
-
-            let enableBlock = all.every((match: string[]) => isAllowed(condition));
-            if (!enableBlock) {
-                hasChanges = true;
-                const newLine = lines[idx].replace(/^(\s*)(.*)/, (s, p1, p2) => `${p1}// ${p2}`);
-                console.log(`---------{} line \n"${lines[idx]}"\n"${newLine}"\n\n`);
-
-                lines[idx] = newLine; // block is not allowed. replace with whitespace, '//', and the rest.
+        switch (comment) {
+            case '<>': {
+                definedNames.add(condition);
+                break;
             }
-            return;
-        }
+            case '{}': {
+                let all = matchAll(reComment.source, line);
 
-        if (comment === '{') {
-            nestingReport.push(`    : ${' '.repeat(Math.min(100, blockNesting) * 4)}>>> ${idx}: ${lines[idx]}`);
+                console.log(chalk.yellow(`--> all="${all}"`), all);
 
-            blockNesting++;
+                let enableBlock = all.every((match: string[]) => isAllowed(condition));
+                if (!enableBlock) {
+                    const newLine = lines[idx].replace(/^(\s*)(.*)/, (s, p1, p2) => `${p1}// ${p2}`);
+                    console.log(`---------{} line \n"${lines[idx]}"\n"${newLine}"\n\n`);
 
-            if (beginBlockIdx < 0) { // If we are not inside block
-                if (!isAllowed(condition)) {
-                    beginBlockIdx = idx;
-                }
-            }
-            return;
-        }
-
-        if (comment === '}') {
-            blockNesting--;
-            if (blockNesting < 0) {
-                printReport(nestingReport);
-                throw new Error(`Mismatched comment blocks: missing opening comment (i.e. '}' before '{')`);
-            }
-
-            nestingReport.push(`    : ${' '.repeat(Math.min(100, blockNesting) * 4)}<<< ${idx}: ${lines[idx]}`);
-
-            if (blockNesting === 0) {
-                if (beginBlockIdx >= 0) { // If we are inside block
+                    lines[idx] = newLine; // block is not allowed. replace with whitespace, '//', and the rest.
                     hasChanges = true;
-
-                    console.log(chalk.cyan(`---------} lines "${lines[idx]}"\n${beginBlockIdx}, ${idx}\n\n`));
-
-                    commentLines(lines, beginBlockIdx, idx);
-                    beginBlockIdx = -1;
                 }
+                break;
+            }
+            case '{': {
+                nestingReport.push(`    : ${' '.repeat(Math.min(100, blockNesting) * 4)}>>> ${idx}: ${lines[idx]}`);
+
+                blockNesting++;
+
+                if (beginBlockIdx < 0) { // If we are not inside block
+                    if (!isAllowed(condition)) {
+                        beginBlockIdx = idx;
+                    }
+                }
+                break;
+            }
+            case '}': {
+                blockNesting--;
+                if (blockNesting < 0) {
+                    printReport(nestingReport);
+                    throw new Error(`Mismatched comment blocks: missing opening comment (i.e. '}' before '{')`);
+                }
+
+                nestingReport.push(`    : ${' '.repeat(Math.min(100, blockNesting) * 4)}<<< ${idx}: ${lines[idx]}`);
+
+                if (blockNesting === 0) {
+                    if (beginBlockIdx >= 0) { // If we are inside block
+                        console.log(chalk.cyan(`---------} lines "${lines[idx]}"\n${beginBlockIdx}, ${idx}\n\n`));
+
+                        commentLines(lines, beginBlockIdx, idx);
+                        hasChanges = true;
+                        beginBlockIdx = -1;
+                    }
+                }
+                break;
             }
         }
     });
