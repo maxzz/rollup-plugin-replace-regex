@@ -42,14 +42,21 @@ export interface RollupReplaceOptions {
    * You can separate values to replace from other options.
    */
   values?: { [str: string]: Replacement };
+
   /**
    * regular expression values
    */
   regexValues?: { [str: string]: Replacement };
   /**
-   * To run or not to run comments check.
+   * To run or not to run comments check. Default is false.
    */
+  
   comments?: boolean;
+  /**
+   * Comments check for release. All conditional blocks lines and blocks will
+   * be commented. Default is false.
+   */
+  commentsForRelease?: boolean;
   /**
    * Addtional definitions for comments check.
    */

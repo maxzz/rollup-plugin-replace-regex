@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 import { splitToLines, commentLines } from './line-utils';
 
-const checkConditions: boolean = true;
+let isReleaseBuild: boolean = false; // i.e. this is release build and all conditional blocks should be commented
 
 const definedNames: Set<string> = new Set();
 
@@ -11,10 +11,10 @@ const reComment = /\/\*\s*(?:\[\s*(\w+\s*(?:,\s*?\w+)*)\s*\])??\s*({|}|{}|<>)\s*
 //const filler = { '{}': '//', '{': '/*', '}': '*/', '<>': '' };
 
 function keepUncommented(conditionName: string): boolean {
-    if (!checkConditions) {
+    if (isReleaseBuild) {
         return false;
     }
-    
+
     if (!conditionName) {
         console.log(`keepUncommented"${conditionName}" = true`);
         return true;
@@ -134,4 +134,8 @@ export function printReport(report: string[]) {
 
 export function defineConditions(allowedConditions: string[] | undefined) {
     allowedConditions?.forEach((condition) => definedNames.add(condition));
+}
+
+export function defineReleaseBuild(isRelease: boolean | undefined = false) {
+    isReleaseBuild = isRelease;
 }

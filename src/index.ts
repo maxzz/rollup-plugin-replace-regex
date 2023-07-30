@@ -2,7 +2,7 @@ import type { MinimalPluginContext, NullValue, PluginContext, RenderedChunk, Sou
 import { Replacement, RollupReplaceOptions } from '../types';
 import MagicString from 'magic-string';
 import { createFilter } from '@rollup/pluginutils';
-import { commentFile, defineConditions } from './conditional-comments';
+import { commentFile, defineConditions, defineReleaseBuild } from './conditional-comments';
 
 function escape(str: string) {
     return str.replace(/[-[\]/{}()*+?.\\^$|]/g, '\\$&');
@@ -20,7 +20,8 @@ function getReplacements(options: RollupReplaceOptions): KeyReplacementMap {
     if (options.values) {
         return Object.assign({}, options.values);
     }
-    const values = Object.assign({}, options) as KeyReplacementMap;
+    const values = Object.assign({}, options) as KeyReplacementMap; // filter out known options that are not values
+
     delete values.delimiters;
     delete values.include;
     delete values.exclude;
@@ -29,10 +30,13 @@ function getReplacements(options: RollupReplaceOptions): KeyReplacementMap {
     delete values.objectGuards;
 
     delete values.preventAssignment;
+
     delete values.regexValues;
     delete values.comments;
+    delete values.commentsForRelease;
     delete values.verbose;
     delete values.conditions;
+
     return values;
 }
 
@@ -136,8 +140,9 @@ export default function replace(options: RollupReplaceOptions = {}) {
 
     const { hasKeys, namedGropus, pattern, preventAssignment } = initReplace();
 
-    const { comments = false, conditions, verbose } = options;
+    const { comments = false, conditions, commentsForRelease = false, verbose } = options;
     if (comments) {
+        defineReleaseBuild(commentsForRelease);
         defineConditions(conditions);
     }
 
