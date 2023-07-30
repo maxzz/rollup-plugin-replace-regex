@@ -64,6 +64,10 @@ function matchAll(regexToMatch: string, s: string): string[][] {
     return rv;
 }
 
+function splitToLines(cnt: string | undefined): string[] {
+    return (cnt || '').split(/\r??\n/g); // w/ empty lines: /\r??\n/g; wo/ empty lines: /[\r\n]+/g or /\r?\n/g
+}
+
 export function printReport(report: string[]) {
     report.forEach((line) => console.log(line));
 }
@@ -73,72 +77,72 @@ export function defineConditions(allowedConditions: string[] | undefined) {
 }
 
 export function commentFile(cnt: string): string | null {
-    const lines: string[] = cnt.split(/\r??\n/g); // or let lines = content.split(/\r?\n/g); // The best without empty lines: cnt.split(/[\r\n]+/g); // Preserve line numbers: /\r??\n/g
+    const lines: string[] = splitToLines(cnt);
     const nestingReport: string[] = [];
 
     let hasChanges = false;
     let beginBlockIdx: number = -1;
     let blockNesting = 0;
 
-    console.log('\n\n');
-
-    lines.forEach((line: string, index: number) => {
-        let m = line.match(reComment);
-        if (!m) {
-            return;
-        }
-        console.log(chalk.yellow.dim(`${m[0]}`));
-
-        if (m[2] === '<>') {
-            definedNames.add(m[1]);
+    lines.forEach((line: string, idx: number) => {
+        let match = line.match(reComment);
+        if (!match) {
             return;
         }
 
-        if (m[2] === '{}') {
+        const [what, condition, comment] = match;
+        console.log(chalk.green.dim(`\n${what}`), 'found line match\n');
+
+        if (comment === '<>') {
+            definedNames.add(condition);
+            return;
+        }
+
+        if (comment === '{}') {
             let all = matchAll(reComment.source, line);
-            
+
             console.log(chalk.yellow(`--> all="${all}"`), all);
 
-            let enableBlock = all.every((match: string[]) => isAllowed(match[1]));
+            let enableBlock = all.every((match: string[]) => isAllowed(condition));
             if (!enableBlock) {
                 hasChanges = true;
-                const newLine = lines[index].replace(/^(\s*)(.*)/, (s, p1, p2) => `${p1}// ${p2}`);
-                console.log(`---------{} line \n"${lines[index]}"\n"${newLine}"\n\n`);
+                const newLine = lines[idx].replace(/^(\s*)(.*)/, (s, p1, p2) => `${p1}// ${p2}`);
+                console.log(`---------{} line \n"${lines[idx]}"\n"${newLine}"\n\n`);
 
-                lines[index] = newLine; // block is not allowed. replace with whitespace, '//', and the rest.
+                lines[idx] = newLine; // block is not allowed. replace with whitespace, '//', and the rest.
             }
             return;
         }
 
-        if (m[2] === '{') {
-            nestingReport.push(`    : ${' '.repeat(Math.min(100, blockNesting) * 4)}>>> ${index}: ${lines[index]}`);
+        if (comment === '{') {
+            nestingReport.push(`    : ${' '.repeat(Math.min(100, blockNesting) * 4)}>>> ${idx}: ${lines[idx]}`);
 
             blockNesting++;
 
             if (beginBlockIdx < 0) { // If we are not inside block
-                if (!isAllowed(m[1])) {
-                    beginBlockIdx = index;
+                if (!isAllowed(condition)) {
+                    beginBlockIdx = idx;
                 }
             }
             return;
         }
 
-        if (m[2] === '}') {
+        if (comment === '}') {
             blockNesting--;
             if (blockNesting < 0) {
                 printReport(nestingReport);
-                throw new Error(`TM: mismatched pre-processor comment blocks '}'. missing prev open comment block.`);
+                throw new Error(`Mismatched comment blocks: missing opening comment (i.e. '}' before '{')`);
             }
 
-            nestingReport.push(`    : ${' '.repeat(Math.min(100, blockNesting) * 4)}<<< ${index}: ${lines[index]}`);
+            nestingReport.push(`    : ${' '.repeat(Math.min(100, blockNesting) * 4)}<<< ${idx}: ${lines[idx]}`);
 
             if (blockNesting === 0) {
                 if (beginBlockIdx >= 0) { // If we are inside block
                     hasChanges = true;
 
-                    console.log(chalk.cyan(`---------} lines "${lines[index]}"\n${beginBlockIdx}, ${index}\n\n`));
+                    console.log(chalk.cyan(`---------} lines "${lines[idx]}"\n${beginBlockIdx}, ${idx}\n\n`));
 
-                    commentLines(lines, beginBlockIdx, index);
+                    commentLines(lines, beginBlockIdx, idx);
                     beginBlockIdx = -1;
                 }
             }
@@ -147,13 +151,13 @@ export function commentFile(cnt: string): string | null {
 
     if (blockNesting !== 0) {
         printReport(nestingReport);
-        throw new Error(`TM: mismatched pre-processor comment blocks {!==0}. missing prev closing comment block.`);
+        throw new Error(`Mismatched comment blocks: missing closing comment (total +- != 0)`);
     }
 
-    if (hasChanges) {
-        console.log('lines', lines);
-    }
-    console.log('////////////////////////////////////////// hasChanges', hasChanges);
+    // if (hasChanges) {
+    //     console.log('lines', lines);
+    // }
+    // console.log('////////////////////////////////////////// hasChanges', hasChanges);
 
     return hasChanges ? lines.join('\r\n') : null;
 }
