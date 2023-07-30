@@ -24,13 +24,11 @@ function isAllowed(conditionName: string): boolean {
 }
 
 function matchAll(regexToMatch: string, s: string): string[][] {
-    // <-
-    // "        /*[traceDc]{}*/ /*[csRawMutations]{}*/ this.muTrace && this.muTrace.traceMutations(muts);"
-    // ->
+    // convert: "/*[traceDc]{}*/ /*[csRawMutations]{}*/ this.muTrace && this.muTrace.traceMutations(muts);"
+    // to:
     // Array(2) [Array(3), Array(3)]
-    // 0:Array(3) ["/*[traceDc]{}*/", "traceDc", "{}"]
-    // 1:Array(3) ["/*[csRawMutations]{}*/", "csRawMutations", "{}"]
-    //
+    //      0:Array(3) ["/*[traceDc]{}*/",        "traceDc",        "{}"]
+    //      1:Array(3) ["/*[csRawMutations]{}*/", "csRawMutations", "{}"]
 
     const rv = [];
     const localRegex = new RegExp(regexToMatch, 'g'); // make regex global
@@ -39,6 +37,15 @@ function matchAll(regexToMatch: string, s: string): string[][] {
         rv.push(m);
     }
     return rv;
+}
+
+function needToComment(line: string) {
+    let all = matchAll(reComment.source, line);
+
+    console.log(chalk.yellow(`--> all="${all}"`), all);
+
+    let enableBlock = all.every((matches: string[]) => isAllowed(matches[1]));
+    return !enableBlock;
 }
 
 export function commentFile(cnt: string): string | null {
@@ -64,12 +71,7 @@ export function commentFile(cnt: string): string | null {
                 break;
             }
             case '{}': {
-                let all = matchAll(reComment.source, line);
-
-                console.log(chalk.yellow(`--> all="${all}"`), all);
-
-                let enableBlock = all.every((matches: string[]) => isAllowed(matches[1]));
-                if (!enableBlock) {
+                if (needToComment(line)) {
                     const newLine = lines[idx].replace(/^(\s*)(.*)/, (s, p1, p2) => `${p1}// ${p2}`);
                     console.log(`---------{} line \n"${lines[idx]}"\n"${newLine}"\n\n`);
 
