@@ -165,7 +165,7 @@ export default function replace(options: RollupReplaceOptions = {}) {
                 return null;
             }
 
-            console.log(green('\n======== RENDERCHUNK =========='));
+            //console.log(green('\n======== RENDERCHUNK =========='));
 
             let newCode: string | null = null;
 
@@ -193,7 +193,7 @@ export default function replace(options: RollupReplaceOptions = {}) {
                 return null;
             }
 
-            console.log(green('\n======== TRANSFORM =========='));
+            //console.log(green('\n======== TRANSFORM =========='));
 
             let newCode: string | null = null;
 

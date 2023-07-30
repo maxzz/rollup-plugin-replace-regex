@@ -68,6 +68,9 @@ New regexValues key to specify replacement pairs where the key can be a regular 
     ]
   ```
 
+## TODO 
+    Add an option to specify when to run actions. Now we run all jobs on transform hook vs. orignal plugin does both transform and renderChunk hooks.
+
 # @rollup/plugin-replace
 
 🍣 A Rollup plugin which replaces targeted strings in files while bundling.

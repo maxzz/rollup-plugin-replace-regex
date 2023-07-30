@@ -16,12 +16,12 @@ function keepUncommented(conditionName: string): boolean {
     }
 
     if (!conditionName) {
-        console.log(`keepUncommented"${conditionName}" = true`);
+        //console.log(`keepUncommented"${conditionName}" = true`);
         return true;
     }
     let rv = conditionName.split(',').map((s) => s.trim()).every((s) => definedNames.has(s));
 
-    console.log(chalk.red(`keepUncommented "${conditionName}" = '${rv}'`));
+    //console.log(chalk.red(`keepUncommented "${conditionName}" = '${rv}'`));
 
     return rv;
 }
@@ -29,7 +29,7 @@ function keepUncommented(conditionName: string): boolean {
 function needToComment(line: string) {
     let lineConditions = getAllLineConditions(reComment.source, line);
 
-    console.log(chalk.yellow(`--> all="${lineConditions}"`), lineConditions);
+    //console.log(chalk.yellow(`--> all="${lineConditions}"`), lineConditions);
 
     let keepUncommentedAll = lineConditions.every((condition) => keepUncommented(condition));
     return !keepUncommentedAll;
@@ -61,7 +61,7 @@ export function commentFile(cnt: string): string | null {
         }
 
         const [mtchedStr, condition, doWhat] = match;
-        console.log(chalk.green.dim(`\n------------${mtchedStr}----------`));
+        //console.log(chalk.green.dim(`\n------------${mtchedStr}----------`));
 
         switch (doWhat) {
             case '<>': {
@@ -71,7 +71,7 @@ export function commentFile(cnt: string): string | null {
             case '{}': {
                 if (needToComment(line)) {
                     const newLine = lines[idx].replace(/^(\s*)(.*)/, (s, p1, p2) => `${p1}// ${p2}`);
-                    console.log(`---------{} line \n"${lines[idx]}"\n"${newLine}"\n\n`);
+                    //console.log(`---------{} line \n"${lines[idx]}"\n"${newLine}"\n\n`);
 
                     lines[idx] = newLine; // block is not allowed. replace with whitespace, '//', and the rest.
                     hasChanges = true;
@@ -101,7 +101,7 @@ export function commentFile(cnt: string): string | null {
 
                 if (blockNesting === 0) {
                     if (beginBlockIdx >= 0) { // If we are inside block
-                        console.log(chalk.cyan(`---------} lines "${lines[idx]}"\n${beginBlockIdx}, ${idx}\n\n`));
+                        //console.log(chalk.cyan(`---------} lines "${lines[idx]}"\n${beginBlockIdx}, ${idx}\n\n`));
 
                         commentLines(lines, beginBlockIdx, idx);
                         hasChanges = true;
