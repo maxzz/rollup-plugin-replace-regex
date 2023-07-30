@@ -10,42 +10,40 @@ const reComment = /\/\*\s*(?:\[\s*(\w+\s*(?:,\s*?\w+)*)\s*\])??\s*({|}|{}|<>)\s*
 
 //const filler = { '{}': '//', '{': '/*', '}': '*/', '<>': '' };
 
-function isAllowed(conditionName: string): boolean {
+function keepUncommented(conditionName: string): boolean {
     if (!checkConditions) {
         return false;
     }
+    
     if (!conditionName) {
-        console.log(`isAllowed "${conditionName}" = true`);
+        console.log(`keepUncommented"${conditionName}" = true`);
         return true;
     }
     let rv = conditionName.split(',').map((s) => s.trim()).every((s) => definedNames.has(s));
-    console.log(chalk.red(`isAllowed "${conditionName}" = '${rv}'`));
-    return rv;
-}
 
-function matchAll(regexToMatch: string, s: string): string[][] {
-    // convert: "/*[traceDc]{}*/ /*[csRawMutations]{}*/ this.muTrace && this.muTrace.traceMutations(muts);"
-    // to:
-    // Array(2) [Array(3), Array(3)]
-    //      0:Array(3) ["/*[traceDc]{}*/",        "traceDc",        "{}"]
-    //      1:Array(3) ["/*[csRawMutations]{}*/", "csRawMutations", "{}"]
+    console.log(chalk.red(`keepUncommented "${conditionName}" = '${rv}'`));
 
-    const rv = [];
-    const localRegex = new RegExp(regexToMatch, 'g'); // make regex global
-    let m: string[] | null;
-    while ((m = localRegex.exec(s))) {
-        rv.push(m);
-    }
     return rv;
 }
 
 function needToComment(line: string) {
-    let all = matchAll(reComment.source, line);
+    let lineConditions = getAllLineConditions(reComment.source, line);
 
-    console.log(chalk.yellow(`--> all="${all}"`), all);
+    console.log(chalk.yellow(`--> all="${lineConditions}"`), lineConditions);
 
-    let enableBlock = all.every((matches: string[]) => isAllowed(matches[1]));
-    return !enableBlock;
+    let keepUncommentedAll = lineConditions.every((condition) => keepUncommented(condition));
+    return !keepUncommentedAll;
+
+    function getAllLineConditions(regexToMatch: string, line: string): string[] {
+        // "/*[traceDc]{}*/ /*[csRawMutations]{}*/ this.muTrace?.traceMutations?.(muts);" --> ["traceDc", "csRawMutations"]
+        const localRegex = new RegExp(regexToMatch, 'g'); // make regex global
+        const rv = [];
+        let match: string[] | null;
+        while ((match = localRegex.exec(line))) {
+            rv.push(match[1]);
+        }
+        return rv;
+    }
 }
 
 export function commentFile(cnt: string): string | null {
@@ -63,7 +61,7 @@ export function commentFile(cnt: string): string | null {
         }
 
         const [mtchedStr, condition, doWhat] = match;
-        console.log(chalk.green.dim(`\n${mtchedStr}`), 'found line match\n');
+        console.log(chalk.green.dim(`\n------------${mtchedStr}----------`));
 
         switch (doWhat) {
             case '<>': {
@@ -86,7 +84,7 @@ export function commentFile(cnt: string): string | null {
                 blockNesting++;
 
                 if (beginBlockIdx < 0) { // If we are not inside block
-                    if (!isAllowed(condition)) {
+                    if (!keepUncommented(condition)) {
                         beginBlockIdx = idx;
                     }
                 }
