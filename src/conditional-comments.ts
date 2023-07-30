@@ -1,4 +1,5 @@
 import pico from 'picocolors';
+
 const checkConditions: boolean = true;
 
 const definedNames: Set<string> = new Set();
@@ -86,6 +87,7 @@ export function commentFile(cnt: string): string | null {
         if (!m) {
             return;
         }
+        console.log(pico.bgRed(pico.yellow(pico.dim(`${m[0]}`))));
 
         if (m[2] === '<>') {
             definedNames.add(m[1]);
@@ -94,6 +96,9 @@ export function commentFile(cnt: string): string | null {
 
         if (m[2] === '{}') {
             let all = matchAll(reComment.source, line);
+            
+            console.log(pico.yellow(`--> all="${all}"`), all);
+
             let enableBlock = all.every((match: string[]) => isAllowed(match[1]));
             if (!enableBlock) {
                 hasChanges = true;
@@ -131,7 +136,7 @@ export function commentFile(cnt: string): string | null {
                 if (beginBlockIdx >= 0) { // If we are inside block
                     hasChanges = true;
 
-                    console.log(`---------} lines "${lines[index]}"\n${beginBlockIdx}, ${index}\n\n`);
+                    console.log(pico.cyan(`---------} lines "${lines[index]}"\n${beginBlockIdx}, ${index}\n\n`));
 
                     commentLines(lines, beginBlockIdx, index);
                     beginBlockIdx = -1;
