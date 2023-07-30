@@ -1,4 +1,4 @@
-import pico from 'picocolors';
+import chalk from 'chalk';
 
 const checkConditions: boolean = true;
 
@@ -18,7 +18,7 @@ function isAllowed(conditionName: string): boolean {
         return true;
     }
     let rv = conditionName.split(',').map((s) => s.trim()).every((s) => definedNames.has(s));
-    console.log(pico.red(`isAllowed "${conditionName}" = '${rv}'`));
+    console.log(chalk.red(`isAllowed "${conditionName}" = '${rv}'`));
     return rv;
 }
 
@@ -87,7 +87,7 @@ export function commentFile(cnt: string): string | null {
         if (!m) {
             return;
         }
-        console.log(pico.bgRed(pico.yellow(pico.dim(`${m[0]}`))));
+        console.log(chalk.yellow.dim(`${m[0]}`));
 
         if (m[2] === '<>') {
             definedNames.add(m[1]);
@@ -97,7 +97,7 @@ export function commentFile(cnt: string): string | null {
         if (m[2] === '{}') {
             let all = matchAll(reComment.source, line);
             
-            console.log(pico.yellow(`--> all="${all}"`), all);
+            console.log(chalk.yellow(`--> all="${all}"`), all);
 
             let enableBlock = all.every((match: string[]) => isAllowed(match[1]));
             if (!enableBlock) {
@@ -136,7 +136,7 @@ export function commentFile(cnt: string): string | null {
                 if (beginBlockIdx >= 0) { // If we are inside block
                     hasChanges = true;
 
-                    console.log(pico.cyan(`---------} lines "${lines[index]}"\n${beginBlockIdx}, ${index}\n\n`));
+                    console.log(chalk.cyan(`---------} lines "${lines[index]}"\n${beginBlockIdx}, ${index}\n\n`));
 
                     commentLines(lines, beginBlockIdx, index);
                     beginBlockIdx = -1;
