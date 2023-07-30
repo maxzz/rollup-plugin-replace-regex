@@ -1,16 +1,16 @@
 {
   "name": "rollup-plugin-replace-regex",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "publishConfig": {
     "access": "public"
   },
   "description": "Replace regex strings in files while bundling",
   "license": "MIT",
+  "author": "Max Zakharzhevskiy <maxzz@msn.com>",
   "repository": {
-    "url": "rollup/plugins",
-    "directory": "packages/replace"
+    "type": "git",
+    "url": "git+https://github.com/maxzz/rollup-plugin-replace-regex.git"
   },
-  "author": "Max <maxzz@msn.com>",
   "homepage": "https://github.com/maxzz/rollup-plugin-replace-regex",
   "bugs": "https://github.com/maxzz/rollup-plugin-replace-regex/issues",
   "keywords": [
