@@ -9,6 +9,10 @@ const reComment = /\/\*\s*(?:\[\s*(\w+\s*(?:,\s*?\w+)*)\s*\])??\s*({|}|{}|<>)\s*
 
 //const filler = { '{}': '//', '{': '/*', '}': '*/', '<>': '' };
 
+function splitToLines(cnt: string | undefined): string[] {
+    return (cnt || '').split(/\r??\n/g); // w/ empty lines: /\r??\n/g; wo/ empty lines: /[\r\n]+/g or /\r?\n/g
+}
+
 function isAllowed(conditionName: string): boolean {
     if (!checkConditions) {
         return false;
@@ -64,18 +68,6 @@ function matchAll(regexToMatch: string, s: string): string[][] {
     return rv;
 }
 
-function splitToLines(cnt: string | undefined): string[] {
-    return (cnt || '').split(/\r??\n/g); // w/ empty lines: /\r??\n/g; wo/ empty lines: /[\r\n]+/g or /\r?\n/g
-}
-
-export function printReport(report: string[]) {
-    report.forEach((line) => console.log(line));
-}
-
-export function defineConditions(allowedConditions: string[] | undefined) {
-    allowedConditions?.forEach((condition) => definedNames.add(condition));
-}
-
 export function commentFile(cnt: string): string | null {
     const lines: string[] = splitToLines(cnt);
     const nestingReport: string[] = [];
@@ -84,16 +76,16 @@ export function commentFile(cnt: string): string | null {
     let beginBlockIdx: number = -1;
     let blockNesting = 0;
 
-    lines.forEach((line: string, idx: number) => {
+    function checkLine(line: string, idx: number) {
         let match = line.match(reComment);
         if (!match) {
             return;
         }
 
-        const [what, condition, comment] = match;
-        console.log(chalk.green.dim(`\n${what}`), 'found line match\n');
+        const [mtchedStr, condition, doWhat] = match;
+        console.log(chalk.green.dim(`\n${mtchedStr}`), 'found line match\n');
 
-        switch (comment) {
+        switch (doWhat) {
             case '<>': {
                 definedNames.add(condition);
                 break;
@@ -103,7 +95,7 @@ export function commentFile(cnt: string): string | null {
 
                 console.log(chalk.yellow(`--> all="${all}"`), all);
 
-                let enableBlock = all.every((match: string[]) => isAllowed(condition));
+                let enableBlock = all.every((matches: string[]) => isAllowed(matches[1]));
                 if (!enableBlock) {
                     const newLine = lines[idx].replace(/^(\s*)(.*)/, (s, p1, p2) => `${p1}// ${p2}`);
                     console.log(`---------{} line \n"${lines[idx]}"\n"${newLine}"\n\n`);
@@ -146,7 +138,9 @@ export function commentFile(cnt: string): string | null {
                 break;
             }
         }
-    });
+    }
+
+    lines.forEach(checkLine);
 
     if (blockNesting !== 0) {
         printReport(nestingReport);
@@ -159,4 +153,12 @@ export function commentFile(cnt: string): string | null {
     // console.log('////////////////////////////////////////// hasChanges', hasChanges);
 
     return hasChanges ? lines.join('\r\n') : null;
+}
+
+export function printReport(report: string[]) {
+    report.forEach((line) => console.log(line));
+}
+
+export function defineConditions(allowedConditions: string[] | undefined) {
+    allowedConditions?.forEach((condition) => definedNames.add(condition));
 }
