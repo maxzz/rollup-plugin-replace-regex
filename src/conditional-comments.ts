@@ -1,3 +1,4 @@
+import pico from 'picocolors';
 const checkConditions: boolean = true;
 
 const definedNames: Set<string> = new Set();
@@ -16,7 +17,7 @@ function isAllowed(conditionName: string): boolean {
         return true;
     }
     let rv = conditionName.split(',').map((s) => s.trim()).every((s) => definedNames.has(s));
-    console.log(`isAllowed "${conditionName}" = '${rv}'`);
+    console.log(pico.red(`isAllowed "${conditionName}" = '${rv}'`));
     return rv;
 }
 
