@@ -8,6 +8,10 @@ function escape(str: string) {
     return str.replace(/[-[\]/{}()*+?.\\^$|]/g, '\\$&');
 }
 
+function green(text: string) {
+    return '\u001b[1m\u001b[32m' + text + '\u001b[39m\u001b[22m';
+}
+
 function ensureFunction(functionOrValue: Function | string): Function {
     return typeof functionOrValue === 'function' ? functionOrValue : () => functionOrValue;
 }
@@ -27,6 +31,7 @@ function getReplacements(options: RollupReplaceOptions): KeyReplacementMap {
     delete values.preventAssignment;
     delete values.regexValues;
     delete values.comments;
+    delete values.verbose;
     delete values.conditions;
     return values;
 }
@@ -145,7 +150,7 @@ export default function replace(options: RollupReplaceOptions = {}) {
             }
         },
 
-        renderChunk(this: PluginContext, code: string, chunk: RenderedChunk): { code: string; map?: SourceMapInput; } | string | NullValue {
+        __renderChunk(this: PluginContext, code: string, chunk: RenderedChunk): { code: string; map?: SourceMapInput; } | string | NullValue {
             if (!hasKeys && !comments) {
                 return null;
             }
@@ -154,6 +159,8 @@ export default function replace(options: RollupReplaceOptions = {}) {
             if (!filter(id)) {
                 return null;
             }
+
+            console.log(green('\n======== RENDERCHUNK =========='));
 
             let newCode: string | null = null;
 
@@ -165,7 +172,11 @@ export default function replace(options: RollupReplaceOptions = {}) {
                 return executeReplacement(this, newCode || code, id);
             }
 
-            return newCode;
+            if (!newCode) {
+                return null;
+            }
+
+            return { code: newCode };
         },
 
         transform(this: TransformPluginContext, code: string, id: string): TransformResult {
@@ -177,6 +188,8 @@ export default function replace(options: RollupReplaceOptions = {}) {
                 return null;
             }
 
+            console.log(green('\n======== TRANSFORM =========='));
+
             let newCode: string | null = null;
 
             if (comments) {
@@ -187,7 +200,11 @@ export default function replace(options: RollupReplaceOptions = {}) {
                 return executeReplacement(this, newCode || code, id);
             }
 
-            return newCode;
+            if (!newCode) {
+                return null;
+            }
+
+            return { code: newCode };
         }
     };
 

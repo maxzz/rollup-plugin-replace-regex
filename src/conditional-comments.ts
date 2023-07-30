@@ -11,11 +11,12 @@ function isAllowed(conditionName: string): boolean {
     if (!checkConditions) {
         return false;
     }
-    console.log(`---------conditionName "${conditionName}"`);
     if (!conditionName) {
+        console.log(`isAllowed "${conditionName}" = true`);
         return true;
     }
     let rv = conditionName.split(',').map((s) => s.trim()).every((s) => definedNames.has(s));
+    console.log(`isAllowed "${conditionName}" = '${rv}'`);
     return rv;
 }
 
@@ -77,52 +78,62 @@ export function commentFile(cnt: string): string | null {
     let beginBlockIdx: number = -1;
     let blockNesting = 0;
 
+    console.log('\n\n');
+
     lines.forEach((line: string, index: number) => {
         let m = line.match(reComment);
-        if (m) {
-            if (m[2] === '<>') {
-                definedNames.add(m[1]);
-                return;
+        if (!m) {
+            return;
+        }
+
+        if (m[2] === '<>') {
+            definedNames.add(m[1]);
+            return;
+        }
+
+        if (m[2] === '{}') {
+            let all = matchAll(reComment.source, line);
+            let enableBlock = all.every((match: string[]) => isAllowed(match[1]));
+            if (!enableBlock) {
+                hasChanges = true;
+                const newLine = lines[index].replace(/^(\s*)(.*)/, (s, p1, p2) => `${p1}// ${p2}`);
+                console.log(`---------{} line \n"${lines[index]}"\n"${newLine}"\n\n`);
+
+                lines[index] = newLine; // block is not allowed. replace with whitespace, '//', and the rest.
+            }
+            return;
+        }
+
+        if (m[2] === '{') {
+            nestingReport.push(`    : ${' '.repeat(Math.min(100, blockNesting) * 4)}>>> ${index}: ${lines[index]}`);
+
+            blockNesting++;
+
+            if (beginBlockIdx < 0) { // If we are not inside block
+                if (!isAllowed(m[1])) {
+                    beginBlockIdx = index;
+                }
+            }
+            return;
+        }
+
+        if (m[2] === '}') {
+            blockNesting--;
+            if (blockNesting < 0) {
+                printReport(nestingReport);
+                throw new Error(`TM: mismatched pre-processor comment blocks '}'. missing prev open comment block.`);
             }
 
-            if (m[2] === '{}') {
-                let all = matchAll(reComment.source, line);
-                let enableBlock = all.every((match: string[]) => isAllowed(match[1]));
-                if (!enableBlock) {
+            nestingReport.push(`    : ${' '.repeat(Math.min(100, blockNesting) * 4)}<<< ${index}: ${lines[index]}`);
+
+            if (blockNesting === 0) {
+                if (beginBlockIdx >= 0) { // If we are inside block
                     hasChanges = true;
-                    lines[index] = lines[index].replace(/^(\s+)(.*)/, (s, p1, p2) => `${p1}// ${p2}`); // block is not allowed. replace with whitespace, '//', and the rest.
-                }
-                return;
-            }
 
-            if (m[2] === '{') {
-                nestingReport.push(`    : ${' '.repeat(Math.min(100, blockNesting) * 4)}>>> ${index}: ${lines[index]}`);
+                    console.log(`---------} lines "${lines[index]}"\n${beginBlockIdx}, ${index}\n\n`);
 
-                blockNesting++;
-
-                if (beginBlockIdx < 0) { // If we are not inside block
-                    if (!isAllowed(m[1])) {
-                        beginBlockIdx = index;
-                    }
-                }
-                return;
-            }
-
-            if (m[2] === '}') {
-                blockNesting--;
-                if (blockNesting < 0) {
-                    printReport(nestingReport);
-                    throw new Error(`TM: mismatched pre-processor comment blocks '}'. missing prev open comment block.`);
-                }
-
-                nestingReport.push(`    : ${' '.repeat(Math.min(100, blockNesting) * 4)}<<< ${index}: ${lines[index]}`);
-
-                if (blockNesting === 0) {
-                    if (beginBlockIdx >= 0) { // If we are inside block
-                        hasChanges = true;
-                        commentLines(lines, beginBlockIdx, index);
-                        beginBlockIdx = -1;
-                    }
+                    commentLines(lines, beginBlockIdx, index);
+                    beginBlockIdx = -1;
                 }
             }
         }
@@ -132,6 +143,11 @@ export function commentFile(cnt: string): string | null {
         printReport(nestingReport);
         throw new Error(`TM: mismatched pre-processor comment blocks {!==0}. missing prev closing comment block.`);
     }
+
+    if (hasChanges) {
+        console.log('lines', lines);
+    }
+    console.log('////////////////////////////////////////// hasChanges', hasChanges);
 
     return hasChanges ? lines.join('\r\n') : null;
 }

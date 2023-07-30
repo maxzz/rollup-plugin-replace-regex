@@ -14,12 +14,23 @@ Cahnges and addtions
 * comments
  
    Special source code comment marks are converted to:
-  | source | result |
-  | ---    |---     |
-  | /*{}*/            | // |
-  | /*[condition]{}*/ | //[condition]{}*/|
-  | /*[condition]{*/  | /*[condition]{} /|
-  | /*[condition]}*/  | //[condition]{}*/|
+    | source | result |
+    | ---    |---     |
+    | /*{}*/            | // |
+    | /*[condition]{}*/ | //[condition]{}*/|
+    | /*[condition]{*/  | /*[condition]{*/ and line comments 
+    | |until the next closing mark|
+    | /*[condition]}*/  | /*[condition]}*/|
+
+  comments operation is executed before values replace. If you need opposite then 
+  call rollup-plugin-replace-regex plugin twice:
+    ```js
+    plugins: [
+        rollup-plugin-replace-regex({values: ...}),
+        rollup-plugin-replace-regex({cooments: true}),
+    ]
+    ```
+
 * conditions
   * additional conditions for comments
 * verbose
