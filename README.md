@@ -2,17 +2,26 @@
 
 This is a modified copy of @rollup/plugin-replace with the ability to match regular expression strings and process conditional comment blocks.
 
-Cahnges and addtions
+## Changes and additions to RollupReplaceOptions
 
-* new key regexValues 
-  * key may contain regex expression (except regex group definitions)
-    * regex keys ignore the boundaries option, but boundaries can be added as part of the regex manually
-  * value is a function that gets
+The RollupReplaceOptions type is defined [here](./types/index.d.ts).
+
+### Regex values
+
+New regexValues key to specify replacement pairs where the key can be a regular expression.
+
+  * *key* may contain regex expression (except regex group definitions)
+    * regex keys ignore the boundaries option, 
+      but boundaries can be added as part of the regex manually
+  * *value* is a string or function that gets
     * file id
     * matched expression by regex key
     * original matched regex key from regexValues
+
+### Conditional comments
+
 * comments
- 
+
    Special source code comment marks are converted to:
     | source | result |
     | ---    |---     |
@@ -21,20 +30,43 @@ Cahnges and addtions
     | /*[condition]{*/  | /*[condition]{*/ and line comments 
     | |until the next closing mark|
     | /*[condition]}*/  | /*[condition]}*/|
+    | /*[condition]}*/  | /*[condition]}*/|
+
+    It is possible to specify multiple conditions in a single line and the line won't be commneted only if all 
+    of them are defined:
+    ```js 
+    /* [aa]<> */ // This line adds 'aa' to allowed definitions
+    /* [bb]<> */ // This line adds 'bb' to allowed definitions
+    /*[aa]{}*/ /*[bb]{}*/ 'aa and bb are defined' 
+    ```
+
+  If commentsForRelease option is true then all conditional blocks will be commented 
+  regardless defined conditions
+
+* conditions
+  * additional conditions for comments
+
+* commentsForRelease
+
+* verbose
+  * print matching and comments process results.
+
+### Execution order
+
+  rollup-plugin-replace-regex supports three diffent modes: 
+   * values replace
+   * values with regular expressions
+   * comments
 
   comments operation is executed before values replace. If you need opposite then 
   call rollup-plugin-replace-regex plugin twice:
-    ```js
+
+  ```js
     plugins: [
         rollup-plugin-replace-regex({values: ...}),
         rollup-plugin-replace-regex({cooments: true}),
     ]
-    ```
-
-* conditions
-  * additional conditions for comments
-* verbose
-  * print matching and comments process results.
+  ```
 
 # @rollup/plugin-replace
 
