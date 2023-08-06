@@ -1,6 +1,6 @@
 {
   "name": "rollup-plugin-replace-regex",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "publishConfig": {
     "access": "public"
   },
@@ -39,6 +39,7 @@
     "@rollup/plugin-commonjs": "^25.0.3",
     "@rollup/plugin-node-resolve": "^15.1.0",
     "@rollup/plugin-typescript": "^11.1.2",
+    "@types/node": "^20.4.6",
     "del-cli": "^5.0.0",
     "locate-character": "^2.0.5",
     "rollup": "^3.2.3",
