@@ -48,13 +48,17 @@ export interface RollupReplaceOptions {
    */
   regexValues?: { [str: string]: Replacement };
   /**
-   * To run or not to run comments check. Default is false.
+   * To run or not to run comments check.
+   * 
+   * @default false
    */
   
   comments?: boolean;
   /**
    * Comments check for release. All conditional blocks lines and blocks will
-   * be commented. Default is false.
+   * be commented.
+   * 
+   * @default false
    */
   commentsForRelease?: boolean;
   /**
@@ -64,7 +68,7 @@ export interface RollupReplaceOptions {
   /**
    * Show debug matching and comments process results.
    */
-  verbose?: string[];
+  verbose?: boolean;
 }
 
 /**
