@@ -155,6 +155,35 @@ export default function replace(options: RollupReplaceOptions = {}) {
             }
         },
 
+        transform(this: TransformPluginContext, code: string, id: string): TransformResult {
+            if (!hasKeys && !comments) {
+                return null;
+            }
+
+            if (!filter(id)) {
+                return null;
+            }
+
+            //console.log(green('\n======== TRANSFORM =========='));
+
+            let newCode: string | null = null;
+
+            if (comments) {
+                newCode = commentFile(code);
+            }
+
+            if (hasKeys) {
+                return executeReplacement(this, newCode || code, id);
+            }
+
+            if (!newCode) {
+                return null;
+            }
+
+            return { code: newCode };
+        },
+
+        // The following hook can be but not used in this plugin (no need).
         __renderChunk(this: PluginContext, code: string, chunk: RenderedChunk): { code: string; map?: SourceMapInput; } | string | NullValue {
             if (!hasKeys && !comments) {
                 return null;
@@ -183,34 +212,6 @@ export default function replace(options: RollupReplaceOptions = {}) {
 
             return { code: newCode };
         },
-
-        transform(this: TransformPluginContext, code: string, id: string): TransformResult {
-            if (!hasKeys && !comments) {
-                return null;
-            }
-
-            if (!filter(id)) {
-                return null;
-            }
-
-            //console.log(green('\n======== TRANSFORM =========='));
-
-            let newCode: string | null = null;
-
-            if (comments) {
-                newCode = commentFile(code);
-            }
-
-            if (hasKeys) {
-                return executeReplacement(this, newCode || code, id);
-            }
-
-            if (!newCode) {
-                return null;
-            }
-
-            return { code: newCode };
-        }
     };
 
     function executeReplacement(ctx: MinimalPluginContext, code: string, id: string): { code: string; map?: SourceMap | undefined; } | null {

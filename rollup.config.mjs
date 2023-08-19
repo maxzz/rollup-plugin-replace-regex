@@ -4,10 +4,10 @@ import { readFileSync } from 'fs';
 import resolve from '@rollup/plugin-node-resolve';
 import cjs from '@rollup/plugin-commonjs';
 
-import { createConfig } from './shared/rollup.config.mjs';
+import { createConfig as createSharedConfig } from './shared/rollup.config.mjs';
 
-const config = createConfig({
-    pkg: JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'))
+const config = createSharedConfig({
+    pkg: JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')),
 });
 
 config.plugins.push(resolve());

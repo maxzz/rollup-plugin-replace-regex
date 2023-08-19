@@ -1,7 +1,12 @@
 import type { FilterPattern } from '@rollup/pluginutils';
 import type { Plugin } from 'rollup';
 
-type Replacement = string | ((id: string, match: string, regexValuesKey: string) => string);
+export type Replacement = string | ((id: string, match: string, regexValuesKey: string) => string);
+
+type ConditionStateFalsy = 0 | '0' | '';
+type ConditionStateTrusy = 1 | '1';
+type ConditionState = boolean | ConditionStateFalsy | ConditionStateTrusy;
+export type ConditionStates = string[] | Record<string, ConditionState>;
 
 export interface RollupReplaceOptions {
   /**
@@ -12,6 +17,7 @@ export interface RollupReplaceOptions {
     | Replacement
     | RollupReplaceOptions['include']
     | RollupReplaceOptions['values']
+    | RollupReplaceOptions['conditions']
     | RollupReplaceOptions['preventAssignment'];
 
   /**
@@ -64,7 +70,7 @@ export interface RollupReplaceOptions {
   /**
    * Addtional definitions for comments check.
    */
-  conditions?: string[];
+  conditions?: ConditionStates;
   /**
    * Show debug matching and comments process results.
    */

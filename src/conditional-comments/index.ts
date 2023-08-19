@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import { ConditionStates } from '../../types';
 import { splitToLines, commentLines } from './line-utils';
 
 let isReleaseBuild: boolean = false; // i.e. this is release build and all conditional blocks should be commented
@@ -132,8 +132,24 @@ export function printReport(report: string[]) {
     report.forEach((line) => console.log(line));
 }
 
-export function defineConditions(allowedConditions: string[] | undefined) {
-    allowedConditions?.forEach((condition) => definedNames.add(condition));
+export function defineConditions(allowedConditions: ConditionStates | undefined) {
+    if (!allowedConditions) {
+        return;
+    }
+
+    if (Array.isArray(allowedConditions)) {
+        allowedConditions
+            .forEach((condition) => {
+                definedNames.add(condition);
+            });
+    } else {
+        Object.entries(allowedConditions)
+            .forEach(([condition, state]) => {
+                if (!!state && state !== '0') {
+                    definedNames.add(condition);
+                }
+            });
+    }
 }
 
 export function defineReleaseBuild(isRelease: boolean | undefined = false) {
